@@ -2,56 +2,58 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Мой Словарь</title>
+    <title>Мой Умный Словарь</title>
     <style>
-        body { font-family: sans-serif; max-width: 600px; margin: 20px auto; padding: 10px; background: #f4f4f9; }
-        nav { margin-bottom: 20px; border-bottom: 2px solid #ccc; padding-bottom: 10px; }
-        button { cursor: pointer; padding: 8px 15px; margin-right: 5px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; background: #f0f2f5; color: #333; }
+        nav { display: flex; gap: 10px; margin-bottom: 25px; }
+        button { cursor: pointer; padding: 10px 20px; border: none; border-radius: 8px; font-weight: bold; transition: 0.2s; }
+        .btn-nav { background: #fff; color: #555; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-nav.active { background: #007bff; color: white; }
         .hidden { display: none; }
-        input { padding: 8px; width: 40%; margin-bottom: 10px; }
-        .word-item { background: white; padding: 10px; margin: 5px 0; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; }
-        #quiz-card { background: white; padding: 40px; text-align: center; border-radius: 10px; shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        #quiz-word { font-size: 24px; font-weight: bold; margin-bottom: 20px; display: block; }
-        .translation { color: blue; cursor: pointer; text-decoration: underline; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        input { padding: 12px; border: 1px solid #ddd; border-radius: 6px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
+        #word-list { margin-top: 20px; }
+        .word-item { background: #fff; padding: 12px; margin: 8px 0; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid #007bff; }
+        #quiz-area { text-align: center; padding: 40px 20px; }
+        #quiz-word { font-size: 32px; font-weight: bold; display: block; margin-bottom: 10px; color: #222; }
+        #quiz-translation { font-size: 20px; color: #28a745; height: 30px; margin: 15px 0; font-weight: 500; }
+        .counter { font-size: 14px; color: #888; margin-bottom: 20px; }
+        .btn-main { background: #28a745; color: white; width: 100%; margin-top: 10px; padding: 15px; font-size: 16px; }
+        .btn-next { background: #007bff; color: white; width: 100%; padding: 15px; font-size: 16px; }
     </style>
 </head>
 <body>
 
 <nav>
-    <button onclick="showTab('add')">Добавить/Список</button>
-    <button onclick="showTab('quiz')">Тренировка</button>
+    <button id="btn-add" class="btn-nav active" onclick="showTab('add')">Словарь</button>
+    <button id="btn-quiz" class="btn-nav" onclick="showTab('quiz')">Тренировка</button>
 </nav>
 
-<!-- Вкладка 1: Добавление и список -->
 <div id="tab-add">
-    <h3>Добавить слово</h3>
-    <input type="text" id="eng" placeholder="English word">
-    <input type="text" id="rus" placeholder="Перевод">
-    <button onclick="addWord()" style="background: #28a745; color: white; border: none;">+</button>
-    
+    <div class="card">
+        <h3>Новое слово</h3>
+        <input type="text" id="eng" placeholder="English (например: Alive)">
+        <input type="text" id="rus" placeholder="Перевод (например: Живой)">
+        <button class="btn-main" onclick="addWord()">Добавить в список</button>
+    </div>
     <div id="word-list"></div>
 </div>
 
-<!-- Вкладка 2: Тренировка -->
 <div id="tab-quiz" class="hidden">
-    <h3>Вспомни перевод</h3>
-    <div id="quiz-card">
+    <div class="card" id="quiz-area">
+        <div class="counter" id="quiz-counter">Слов в очереди: 0</div>
         <span id="quiz-word">Нажми "Следующее", чтобы начать</span>
-        <p id="quiz-translation" class="hidden" style="color: #666; margin-top: 10px;"></p>
-        <br>
-        <button onclick="showTranslation()">Показать перевод</button>
-        <button onclick="nextQuizWord()" style="background: #007bff; color: white; border: none;">Следующее →</button>
+        <div id="quiz-translation" class="hidden"></div>
+        <button class="btn-nav" style="width:100%; margin-bottom:10px;" onclick="showTranslation()">Показать перевод</button>
+        <button class="btn-next" onclick="nextQuizWord()">Следующее слово →</button>
     </div>
 </div>
 
 <script>
     let words = JSON.parse(localStorage.getItem('myWords')) || [];
+    let deck = []; // Наша рабочая колода
 
-    function save() {
-        localStorage.setItem('myWords', JSON.stringify(words));
-        renderList();
-    }
-
+    // 1. Добавление слова
     function addWord() {
         const eng = document.getElementById('eng').value.trim();
         const rus = document.getElementById('rus').value.trim();
@@ -59,55 +61,84 @@
             words.push({ eng, rus });
             document.getElementById('eng').value = '';
             document.getElementById('rus').value = '';
-            save();
+            saveAndRender();
+            deck = []; // Сбрасываем колоду, так как список изменился
         }
     }
 
     function deleteWord(index) {
         words.splice(index, 1);
-        save();
+        saveAndRender();
+        deck = [];
+    }
+
+    function saveAndRender() {
+        localStorage.setItem('myWords', JSON.stringify(words));
+        renderList();
     }
 
     function renderList() {
         const listDiv = document.getElementById('word-list');
-        listDiv.innerHTML = '<h3>Мои слова (по алфавиту):</h3>';
-        
-        // Сортировка по алфавиту
-        const sortedWords = [...words].sort((a, b) => a.eng.localeCompare(b.eng));
-        
-        sortedWords.forEach((word, index) => {
+        listDiv.innerHTML = `<h3>Всего слов: ${words.length}</h3>`;
+        const sorted = [...words].sort((a, b) => a.eng.localeCompare(b.eng));
+        sorted.forEach((word) => {
             listDiv.innerHTML += `
                 <div class="word-item">
                     <span><strong>${word.eng}</strong> — ${word.rus}</span>
-                    <button onclick="deleteWord(${words.indexOf(word)})" style="color:red; border:none; background:none;">✕</button>
+                    <button onclick="deleteWord(${words.indexOf(word)})" style="color:#dc3545; background:none; font-size:20px;">✕</button>
                 </div>`;
         });
     }
 
-    function showTab(tab) {
-        document.getElementById('tab-add').classList.toggle('hidden', tab !== 'add');
-        document.getElementById('tab-quiz').classList.toggle('hidden', tab !== 'quiz');
-        if(tab === 'quiz') nextQuizWord();
+    // 2. Логика перемешивания (Fisher-Yates)
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
     }
 
-    // Логика тренировки
+    // 3. Логика тренировки (Колода)
     function nextQuizWord() {
         if (words.length === 0) {
-            document.getElementById('quiz-word').innerText = "Сначала добавь слова!";
+            alert("Список пуст!");
             return;
         }
-        const randomWord = words[Math.floor(Math.random() * words.length)];
-        document.getElementById('quiz-word').innerText = randomWord.eng;
-        document.getElementById('quiz-translation').innerText = randomWord.rus;
+
+        // Если колода пуста — создаем новую из всех слов и перемешиваем
+        if (deck.length === 0) {
+            deck = shuffle([...words]);
+            alert("Колода перемешана! Начинаем новый цикл.");
+        }
+
+        // Берем ПОСЛЕДНЕЕ слово из перемешанной колоды и УДАЛЯЕМ его оттуда (метод pop)
+        const currentWord = deck.pop();
+        
+        document.getElementById('quiz-word').innerText = currentWord.eng;
+        document.getElementById('quiz-translation').innerText = currentWord.rus;
         document.getElementById('quiz-translation').classList.add('hidden');
+        document.getElementById('quiz-counter').innerText = `Осталось в этой пачке: ${deck.length}`;
     }
 
     function showTranslation() {
         document.getElementById('quiz-translation').classList.remove('hidden');
     }
 
-    // Инициализация
-    renderList(); 
+    function showTab(tab) {
+        document.getElementById('tab-add').classList.toggle('hidden', tab !== 'add');
+        document.getElementById('tab-quiz').classList.toggle('hidden', tab !== 'quiz');
+        
+        document.getElementById('btn-add').classList.toggle('active', tab === 'add');
+        document.getElementById('btn-quiz').classList.toggle('active', tab === 'quiz');
+
+        if (tab === 'quiz' && deck.length === 0) {
+            nextQuizWord();
+        }
+    }
+
+    // Старт
+    renderList();
 </script>
 
 </body>
