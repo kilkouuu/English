@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Мой Словарь</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 20px auto; padding: 10px; background: #f4f4f9; }
+        nav { margin-bottom: 20px; border-bottom: 2px solid #ccc; padding-bottom: 10px; }
+        button { cursor: pointer; padding: 8px 15px; margin-right: 5px; }
+        .hidden { display: none; }
+        input { padding: 8px; width: 40%; margin-bottom: 10px; }
+        .word-item { background: white; padding: 10px; margin: 5px 0; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; }
+        #quiz-card { background: white; padding: 40px; text-align: center; border-radius: 10px; shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        #quiz-word { font-size: 24px; font-weight: bold; margin-bottom: 20px; display: block; }
+        .translation { color: blue; cursor: pointer; text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <button onclick="showTab('add')">Добавить/Список</button>
+    <button onclick="showTab('quiz')">Тренировка</button>
+</nav>
+
+<!-- Вкладка 1: Добавление и список -->
+<div id="tab-add">
+    <h3>Добавить слово</h3>
+    <input type="text" id="eng" placeholder="English word">
+    <input type="text" id="rus" placeholder="Перевод">
+    <button onclick="addWord()" style="background: #28a745; color: white; border: none;">+</button>
+    
+    <div id="word-list"></div>
+</div>
+
+<!-- Вкладка 2: Тренировка -->
+<div id="tab-quiz" class="hidden">
+    <h3>Вспомни перевод</h3>
+    <div id="quiz-card">
+        <span id="quiz-word">Нажми "Следующее", чтобы начать</span>
+        <p id="quiz-translation" class="hidden" style="color: #666; margin-top: 10px;"></p>
+        <br>
+        <button onclick="showTranslation()">Показать перевод</button>
+        <button onclick="nextQuizWord()" style="background: #007bff; color: white; border: none;">Следующее →</button>
+    </div>
+</div>
+
+<script>
+    let words = JSON.parse(localStorage.getItem('myWords')) || [];
+
+    function save() {
+        localStorage.setItem('myWords', JSON.stringify(words));
+        renderList();
+    }
+
+    function addWord() {
+        const eng = document.getElementById('eng').value.trim();
+        const rus = document.getElementById('rus').value.trim();
+        if (eng && rus) {
+            words.push({ eng, rus });
+            document.getElementById('eng').value = '';
+            document.getElementById('rus').value = '';
+            save();
+        }
+    }
+
+    function deleteWord(index) {
+        words.splice(index, 1);
+        save();
+    }
+
+    function renderList() {
+        const listDiv = document.getElementById('word-list');
+        listDiv.innerHTML = '<h3>Мои слова (по алфавиту):</h3>';
+        
+        // Сортировка по алфавиту
+        const sortedWords = [...words].sort((a, b) => a.eng.localeCompare(b.eng));
+        
+        sortedWords.forEach((word, index) => {
+            listDiv.innerHTML += `
+                <div class="word-item">
+                    <span><strong>${word.eng}</strong> — ${word.rus}</span>
+                    <button onclick="deleteWord(${words.indexOf(word)})" style="color:red; border:none; background:none;">✕</button>
+                </div>`;
+        });
+    }
+
+    function showTab(tab) {
+        document.getElementById('tab-add').classList.toggle('hidden', tab !== 'add');
+        document.getElementById('tab-quiz').classList.toggle('hidden', tab !== 'quiz');
+        if(tab === 'quiz') nextQuizWord();
+    }
+
+    // Логика тренировки
+    function nextQuizWord() {
+        if (words.length === 0) {
+            document.getElementById('quiz-word').innerText = "Сначала добавь слова!";
+            return;
+        }
+        const randomWord = words[Math.floor(Math.random() * words.length)];
+        document.getElementById('quiz-word').innerText = randomWord.eng;
+        document.getElementById('quiz-translation').innerText = randomWord.rus;
+        document.getElementById('quiz-translation').classList.add('hidden');
+    }
+
+    function showTranslation() {
+        document.getElementById('quiz-translation').classList.remove('hidden');
+    }
+
+    // Инициализация
+    renderList();
+</script>
+
+</body>
+</html>
