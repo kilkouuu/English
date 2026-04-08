@@ -2,137 +2,152 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>My Smart Dictionary</title>
+    <title>English: Oxford 3000 Edition</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; background: #f0f2f5; }
-        nav { display: flex; gap: 10px; margin-bottom: 25px; }
-        button { cursor: pointer; padding: 10px 20px; border: none; border-radius: 8px; font-weight: bold; transition: 0.2s; }
-        .btn-nav { background: #fff; color: #555; box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex: 1; }
+        body { font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; background: #f4f7f6; color: #333; }
+        nav { display: flex; gap: 8px; margin-bottom: 20px; }
+        button { cursor: pointer; padding: 10px; border: none; border-radius: 8px; font-weight: bold; transition: 0.2s; }
+        .btn-nav { background: #fff; color: #555; box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex: 1; font-size: 13px; }
         .btn-nav.active { background: #007bff; color: white; }
         .hidden { display: none; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
         input { padding: 12px; border: 1px solid #ddd; border-radius: 6px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
-        .translate-row { display: flex; gap: 5px; }
-        .btn-translate { background: #6c757d; color: white; padding: 10px; font-size: 14px; white-space: nowrap; }
-        .btn-main { background: #28a745; color: white; width: 100%; padding: 15px; font-size: 16px; margin-top: 5px; }
-        .word-item { background: #fff; padding: 12px; margin: 8px 0; border-radius: 8px; display: flex; justify-content: space-between; border-left: 4px solid #007bff; }
+        .btn-main { background: #28a745; color: white; width: 100%; padding: 15px; font-size: 16px; }
+        .word-item { background: #fff; padding: 10px; margin: 5px 0; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid #007bff; }
+        .oxford-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; font-size: 14px; }
+        .add-ox-btn { background: #e7f3ff; color: #007bff; padding: 4px 8px; font-size: 12px; border-radius: 4px; }
         #quiz-area { text-align: center; padding: 30px 10px; }
-        #quiz-word { font-size: 32px; font-weight: bold; display: block; margin-bottom: 10px; }
-        #quiz-translation { font-size: 20px; color: #28a745; height: 30px; margin: 15px 0; font-weight: 500; }
+        #quiz-word { font-size: 32px; font-weight: bold; }
+        #quiz-translation { font-size: 20px; color: #28a745; height: 30px; margin: 15px 0; }
     </style>
 </head>
 <body>
 
 <nav>
-    <button id="btn-add" class="btn-nav active" onclick="showTab('add')">Словарь</button>
+    <button id="btn-add" class="btn-nav active" onclick="showTab('add')">Мой список</button>
+    <button id="btn-ox" class="btn-nav" onclick="showTab('oxford')">База Oxford</button>
     <button id="btn-quiz" class="btn-nav" onclick="showTab('quiz')">Тренировка</button>
 </nav>
 
+<!-- Вкладка 1: Свой список -->
 <div id="tab-add">
     <div class="card">
-        <h3>Добавить слово</h3>
-        <div class="translate-row">
-            <input type="text" id="eng" placeholder="English word or phrase">
-            <button class="btn-translate" id="t-btn" onclick="translateWord()">Перевод 🔍</button>
-        </div>
-        <input type="text" id="rus" placeholder="Перевод (заполнится автоматически)">
+        <h3>Добавить слово вручную</h3>
+        <input type="text" id="eng" placeholder="English">
+        <input type="text" id="rus" placeholder="Перевод">
         <button class="btn-main" onclick="addWord()">Сохранить</button>
     </div>
     <div id="word-list"></div>
 </div>
 
+<!-- Вкладка 2: Oxford База -->
+<div id="tab-oxford" class="hidden">
+    <div class="card">
+        <h3>Oxford 3000 (Топ слов)</h3>
+        <p style="font-size: 12px; color: #666;">Нажми на слово, чтобы добавить его в обучение</p>
+        <div id="oxford-list" style="max-height: 400px; overflow-y: auto;"></div>
+    </div>
+</div>
+
+<!-- Вкладка 3: Тренировка -->
 <div id="tab-quiz" class="hidden">
     <div class="card" id="quiz-area">
-        <div id="quiz-counter" style="color:#888; margin-bottom:10px;">В очереди: 0</div>
+        <div id="quiz-counter" style="color:#888; font-size: 12px; margin-bottom:10px;"></div>
         <span id="quiz-word">...</span>
         <div id="quiz-translation" class="hidden"></div>
-        <button class="btn-nav" style="width:100%; margin-bottom:10px;" onclick="showTranslation()">Проверить</button>
-        <button class="btn-nav" style="width:100%; background:#007bff; color:white;" onclick="nextQuizWord()">Следующее →</button>
+        <button class="btn-nav" style="width:100%; margin-bottom:10px; border: 1px solid #ddd;" onclick="showTranslation()">Проверить</button>
+        <button class="btn-nav" style="width:100%; background:#007bff; color:white;" onclick="nextQuizWord()">Дальше →</button>
     </div>
 </div>
 
 <script>
+    // База Oxford (для примера добавил часть, можно расширять)
+    const oxfordBase = [
+        {eng: "Ability", rus: "Способность"}, {eng: "Accept", rus: "Принимать"},
+        {eng: "Advice", rus: "Совет"}, {eng: "Agree", rus: "Соглашаться"},
+        {eng: "Behavior", rus: "Поведение"}, {eng: "Benefit", rus: "Выгода"},
+        {eng: "Certain", rus: "Определенный"}, {eng: "Choice", rus: "Выбор"},
+        {eng: "Compare", rus: "Сравнивать"}, {eng: "Decision", rus: "Решение"},
+        {eng: "Degree", rus: "Степень"}, {eng: "Education", rus: "Образование"},
+        {eng: "Experience", rus: "Опыт"}, {eng: "Fear", rus: "Страх"},
+        {eng: "Goal", rus: "Цель"}, {eng: "Health", rus: "Здоровье"},
+        {eng: "Improve", rus: "Улучшать"}, {eng: "Knowledge", rus: "Знание"},
+        {eng: "Listen", rus: "Слушать"}, {eng: "Memory", rus: "Память"}
+        // Сюда можно дописать хоть все 3000 слов
+    ];
+
     let words = JSON.parse(localStorage.getItem('myWords')) || [];
     let deck = [];
-
-    // Улучшенный перевод с обходом CORS
-    async function translateWord() {
-        const text = document.getElementById('eng').value.trim();
-        const btn = document.getElementById('t-btn');
-        if (!text) return;
-
-        btn.disabled = true; btn.innerText = "⏳";
-        
-        try {
-            // Используем альтернативный прокси для Google Translate (более надежный для браузера)
-            const url = `https://googleapis.com{encodeURIComponent(text)}`;
-            const response = await fetch(url);
-            const data = await response.json();
-            
-            if (data && data[0] && data[0][0]) {
-                document.getElementById('rus').value = data[0][0][0];
-            }
-        } catch (e) {
-            alert("Не удалось перевести. Проверь интернет или впиши перевод вручную.");
-        } finally {
-            btn.disabled = false; btn.innerText = "Перевод 🔍";
-        }
-    }
-
-    function addWord() {
-        const eng = document.getElementById('eng').value.trim();
-        const rus = document.getElementById('rus').value.trim();
-        if (eng && rus) {
-            words.push({ eng, rus });
-            document.getElementById('eng').value = '';
-            document.getElementById('rus').value = '';
-            save();
-        }
-    }
 
     function save() {
         localStorage.setItem('myWords', JSON.stringify(words));
         renderList();
-        deck = [];
+    }
+
+    function addWord(e, r) {
+        const eng = e || document.getElementById('eng').value.trim();
+        const rus = r || document.getElementById('rus').value.trim();
+        if (eng && rus) {
+            if (!words.some(w => w.eng.toLowerCase() === eng.toLowerCase())) {
+                words.push({ eng, rus });
+                save();
+            }
+            if(!e) { document.getElementById('eng').value = ''; document.getElementById('rus').value = ''; }
+        }
     }
 
     function renderList() {
         const listDiv = document.getElementById('word-list');
-        listDiv.innerHTML = `<h3>Всего слов: ${words.length}</h3>`;
+        listDiv.innerHTML = `<h3>Учу слов: ${words.length}</h3>`;
         [...words].sort((a,b) => a.eng.localeCompare(b.eng)).forEach(w => {
             listDiv.innerHTML += `<div class="word-item">
                 <span><strong>${w.eng}</strong> — ${w.rus}</span>
-                <button onclick="deleteWord('${w.eng}')" style="color:red; background:none;">✕</button>
+                <button onclick="deleteWord('${w.eng}')" style="color:#ff4d4d; background:none; font-size:18px;">✕</button>
             </div>`;
+        });
+    }
+
+    function renderOxford() {
+        const oxDiv = document.getElementById('oxford-list');
+        oxDiv.innerHTML = "";
+        oxfordBase.sort((a,b) => a.eng.localeCompare(b.eng)).forEach(w => {
+            oxDiv.innerHTML += `
+                <div class="oxford-item">
+                    <span><b>${w.eng}</b> - ${w.rus}</span>
+                    <button class="add-ox-btn" onclick="addWord('${w.eng}', '${w.rus}')">Добавить +</button>
+                </div>`;
         });
     }
 
     function deleteWord(eng) {
         words = words.filter(w => w.eng !== eng);
         save();
+        deck = [];
     }
 
     function nextQuizWord() {
-        if (words.length === 0) return;
+        if (words.length === 0) { alert("Твой список пуст!"); return; }
         if (deck.length === 0) deck = [...words].sort(() => Math.random() - 0.5);
         const current = deck.pop();
         document.getElementById('quiz-word').innerText = current.eng;
         document.getElementById('quiz-translation').innerText = current.rus;
         document.getElementById('quiz-translation').classList.add('hidden');
-        document.getElementById('quiz-counter').innerText = `Осталось в очереди: ${deck.length}`;
+        document.getElementById('quiz-counter').innerText = `Осталось: ${deck.length}`;
     }
 
     function showTranslation() { document.getElementById('quiz-translation').classList.remove('hidden'); }
-    
+
     function showTab(tab) {
-        document.getElementById('tab-add').classList.toggle('hidden', tab !== 'add');
-        document.getElementById('tab-quiz').classList.toggle('hidden', tab !== 'quiz');
-        document.getElementById('btn-add').classList.toggle('active', tab === 'add');
-        document.getElementById('btn-quiz').classList.toggle('active', tab === 'quiz');
+        const tabs = ['add', 'oxford', 'quiz'];
+        tabs.forEach(t => {
+            document.getElementById(`tab-${t}`).classList.toggle('hidden', t !== tab);
+            document.getElementById(`btn-${t === 'oxford' ? 'ox' : t}`).classList.toggle('active', t === tab);
+        });
         if (tab === 'quiz') nextQuizWord();
     }
 
     renderList();
+    renderOxford();
 </script>
 </body>
 </html>
