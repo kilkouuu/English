@@ -2,163 +2,102 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>My Dictionary</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Easy English</title>
     <style>
-        body { font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; background: #f0f2f5; }
+        body { font-family: sans-serif; max-width: 500px; margin: auto; padding: 20px; background: #f0f2f5; }
         nav { display: flex; gap: 10px; margin-bottom: 20px; }
-        button { cursor: pointer; padding: 12px; border: none; border-radius: 8px; font-weight: bold; flex: 1; }
+        button { cursor: pointer; padding: 12px; border: none; border-radius: 8px; flex: 1; font-weight: bold; }
         .active { background: #007bff; color: white; }
         .hidden { display: none; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        input { padding: 12px; border: 1px solid #ddd; border-radius: 6px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
-        .btn-add { background: #28a745; color: white; width: 100%; }
-        .word-item { background: white; padding: 10px; margin: 5px 0; border-radius: 8px; display: flex; justify-content: space-between; border-left: 4px solid #007bff; }
-        #quiz-area { text-align: center; padding: 20px 0; }
-        #quiz-word { font-size: 28px; font-weight: bold; display: block; margin-bottom: 15px; }
-        #quiz-trans { font-size: 20px; color: #28a745; margin: 15px 0; min-height: 25px; }
-        .hint { font-size: 12px; color: #007bff; display: block; margin: -5px 0 10px 2px; height: 15px; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        input { padding: 12px; border: 1px solid #ddd; width: 100%; box-sizing: border-box; margin-bottom: 10px; border-radius: 6px; }
+        .word-item { background: white; padding: 10px; margin-top: 10px; border-radius: 8px; display: flex; justify-content: space-between; border-left: 4px solid #007bff; }
     </style>
 </head>
 <body>
 
 <nav>
-    <button id="btn-tab-add" class="active" onclick="showTab('add')">Словарь</button>
-    <button id="btn-tab-quiz" onclick="showTab('quiz')">Тренировка</button>
+    <button id="b1" class="active" onclick="tab('add')">Словарь</button>
+    <button id="b2" onclick="tab('quiz')">Тренировка</button>
 </nav>
 
-<div id="tab-add">
+<div id="add">
     <div class="card">
-        <input type="text" id="eng" placeholder="English..." oninput="autoTranslate(this.value)">
-        <span id="auto-hint" class="hint"></span>
-        <input type="text" id="rus" placeholder="Перевод...">
-        <button class="btn-add" onclick="addWord()">Сохранить</button>
+        <input type="text" id="e" placeholder="English..." oninput="auto(this.value)">
+        <input type="text" id="r" placeholder="Перевод...">
+        <button onclick="add()" style="background:#28a745; color:white; width:100%">Сохранить</button>
     </div>
-    <div id="word-list"></div>
+    <div id="list"></div>
 </div>
 
-<div id="tab-quiz" class="hidden">
-    <div class="card" id="quiz-area">
-        <div id="quiz-count" style="font-size:12px; color:gray"></div>
-        <span id="quiz-word">Нажми "Дальше"</span>
-        <div id="quiz-trans" class="hidden"></div>
-        <button onclick="document.getElementById('quiz-trans').classList.remove('hidden')" style="width:100%; margin-bottom:10px">Проверить</button>
-        <button onclick="nextWord()" style="background:#007bff; color:white; width:100%">Дальше →</button>
+<div id="quiz" class="hidden">
+    <div class="card" style="text-align:center">
+        <div id="count" style="font-size:12px; color:gray"></div>
+        <h2 id="qw">...</h2>
+        <h3 id="qr" class="hidden" style="color:#28a745"></h3>
+        <button onclick="document.getElementById('qr').classList.remove('hidden')" style="width:100%; margin-bottom:10px">Проверить</button>
+        <button onclick="next()" style="background:#007bff; color:white; width:100%">Дальше →</button>
     </div>
 </div>
 
 <script>
-    // Короткие строки, чтобы мобильный редактор не «ругался»
-    const base = {
-        "ability": "способность", "about": "о", "above": "над", "accept": "принять",
-        "across": "через", "action": "действие", "add": "добавить", "adult": "взрослый",
-        "agree": "согласиться", "alive": "живой", "allow": "позволять", "always": "всегда",
-        "appear": "появляться", "arrive": "прибывать", "ask": "спрашивать", "awful": "ужасный",
-        "bad": "плохой", "beautiful": "красивый", "believe": "верить", "big": "большой",
-        "borrow": "одалживать", "boy": "мальчик", "break": "ломать", "bring": "приносить",
-        "call": "звонить", "careful": "осторожный", "carry": "нести", "change": "менять",
-        "cheap": "дешевый", "choice": "выбор", "city": "город", "clean": "чистый",
-        "close": "закрывать", "cold": "холодный", "common": "обычный", "correct": "верный",
-        "dark": "темный", "day": "день", "decide": "решать", "deep": "глубокий",
-        "describe": "описывать", "different": "разный", "do": "делать", "door": "дверь",
-        "dream": "мечтать", "drink": "пить", "early": "ранний", "easy": "легкий",
-        "eat": "есть", "enough": "достаточно", "every": "каждый", "explain": "объяснять",
-        "fall": "падать", "far": "далеко", "feel": "чувствовать", "find": "находить",
-        "finish": "закончить", "food": "еда", "forget": "забывать", "friend": "друг",
-        "get": "получать", "girl": "девочка", "give": "давать", "go": "идти",
-        "good": "хороший", "guess": "угадывать", "happen": "случаться", "happy": "счастливый",
-        "hard": "тяжелый", "hear": "слышать", "help": "помогать", "high": "высокий",
-        "hope": "надеяться", "hot": "горячий", "hour": "час", "house": "дом",
-        "huge": "огромный", "idea": "идея", "important": "важный", "improve": "улучшать",
-        "job": "работа", "keep": "держать", "kind": "добрый", "know": "знать",
-        "large": "большой", "laugh": "смеяться", "learn": "учить", "leave": "уходить",
-        "lend": "давать в долг", "life": "жизнь", "listen": "слушать", "little": "маленький",
-        "long": "длинный", "look": "смотреть", "lose": "терять", "love": "любовь",
-        "make": "делать", "many": "много", "mean": "значить", "meet": "встречать",
-        "move": "двигаться", "name": "имя", "near": "рядом", "need": "нуждаться",
-        "never": "никогда", "new": "новый", "next": "следующий", "night": "ночь",
-        "often": "часто", "old": "старый", "open": "открывать", "order": "заказ",
-        "own": "собственный", "part": "часть", "pass": "проходить", "pay": "платить",
-        "people": "люди", "place": "место", "play": "играть", "possible": "возможный",
-        "prefer": "предпочитать", "probably": "вероятно", "problem": "проблема", "promise": "обещать",
-        "quick": "быстрый", "read": "читать", "ready": "готовый", "real": "настоящий",
-        "remember": "помнить", "repair": "чинить", "right": "правый", "run": "бежать",
-        "same": "тот же", "say": "говорить", "see": "видеть", "send": "отправлять",
-        "show": "показывать", "simple": "простой", "sleep": "спать", "small": "маленький",
-        "smile": "улыбаться", "soon": "скоро", "speak": "говорить", "start": "начинать",
-        "stop": "стоп", "strong": "сильный", "suggest": "предлагать", "take": "брать",
-        "talk": "разговаривать", "tell": "рассказывать", "think": "думать", "time": "время",
-        "try": "пытаться", "turn": "поворачивать", "understand": "понимать", "use": "использовать",
-        "very": "очень", "wait": "ждать", "walk": "гулять", "want": "хотеть",
-        "watch": "смотреть", "water": "вода", "way": "путь", "week": "неделя",
-        "well": "хорошо", "what": "что", "where": "где", "white": "белый",
-        "who": "кто", "why": "почему", "work": "работать", "worry": "беспокоиться",
-        "write": "писать", "wrong": "неправильный", "year": "год", "yes": "да", "young": "молодой"
-    };
+    // Маленькая база для теста (добавь свои слова сюда)
+    const base = {"alive":"живой","awful":"ужасный","borrow":"одалживать","cheap":"дешевый","common":"обычный","correct":"верный","decide":"решать","deep":"глубокий","explain":"объяснять","guess":"угадывать","happen":"случаться","improve":"улучшать","loud":"громкий","probably":"вероятно","suggest":"предлагать","worry":"беспокоиться"};
 
     let myWords = JSON.parse(localStorage.getItem('myWords')) || [];
     let deck = [];
 
-    function autoTranslate(v) {
-        const word = v.toLowerCase().trim();
-        const hint = document.getElementById('auto-hint');
-        const rusInput = document.getElementById('rus');
-        if (base[word]) {
-            hint.innerText = "Найдено в базе!";
-            rusInput.value = base[word];
-        } else {
-            hint.innerText = "";
-        }
+    function auto(v) {
+        let w = v.toLowerCase().trim();
+        if(base[w]) document.getElementById('r').value = base[w];
     }
 
-    function addWord() {
-        const eng = document.getElementById('eng').value.trim();
-        const rus = document.getElementById('rus').value.trim();
-        if (eng && rus) {
-            myWords.push({eng, rus});
+    function add() {
+        let en = document.getElementById('e').value.trim();
+        let ru = document.getElementById('r').value.trim();
+        if(en && ru) {
+            myWords.push({en, ru});
             localStorage.setItem('myWords', JSON.stringify(myWords));
-            document.getElementById('eng').value = '';
-            document.getElementById('rus').value = '';
-            renderList();
+            document.getElementById('e').value = '';
+            document.getElementById('r').value = '';
+            render();
         }
     }
 
-    function renderList() {
-        const div = document.getElementById('word-list');
-        div.innerHTML = `<h4>Мои слова (${myWords.length}):</h4>`;
-        [...myWords].reverse().forEach((w, i) => {
-            div.innerHTML += `<div class="word-item">
-                <span><b>${w.eng}</b> — ${w.rus}</span>
-                <button onclick="deleteWord(${myWords.indexOf(w)})" style="color:red; background:none; padding:0; flex:none">✕</button>
-            </div>`;
+    function render() {
+        let d = document.getElementById('list');
+        d.innerHTML = `<h4>Слов в списке: ${myWords.length}</h4>`;
+        myWords.forEach((w, i) => {
+            d.innerHTML += `<div class="word-item"><span>${w.en} - ${w.ru}</span><button onclick="del(${i})" style="color:red; background:none">✕</button></div>`;
         });
     }
 
-    function deleteWord(i) {
+    function del(i) {
         myWords.splice(i, 1);
         localStorage.setItem('myWords', JSON.stringify(myWords));
-        renderList();
+        render();
     }
 
-    function nextWord() {
-        if (myWords.length === 0) return alert("Добавь слова!");
-        if (deck.length === 0) deck = [...myWords].sort(() => Math.random() - 0.5);
-        const w = deck.pop();
-        document.getElementById('quiz-word').innerText = w.eng;
-        document.getElementById('quiz-trans').innerText = w.rus;
-        document.getElementById('quiz-trans').classList.add('hidden');
-        document.getElementById('quiz-count').innerText = `Осталось: ${deck.length}`;
+    function tab(t) {
+        document.getElementById('add').className = (t=='add' ? '' : 'hidden');
+        document.getElementById('quiz').className = (t=='quiz' ? '' : 'hidden');
+        document.getElementById('b1').className = (t=='add' ? 'active' : '');
+        document.getElementById('b2').className = (t=='quiz' ? 'active' : '');
+        if(t == 'quiz') next();
     }
 
-    function showTab(t) {
-        document.getElementById('tab-add').classList.toggle('hidden', t !== 'add');
-        document.getElementById('tab-quiz').classList.toggle('hidden', t !== 'quiz');
-        document.getElementById('btn-tab-add').classList.toggle('active', t === 'add');
-        document.getElementById('btn-tab-quiz').classList.toggle('active', t === 'quiz');
-        if (t === 'quiz') nextWord();
+    function next() {
+        if(myWords.length == 0) return alert("Сначала добавь слова!");
+        if(deck.length == 0) deck = [...myWords].sort(() => Math.random() - 0.5);
+        let w = deck.pop();
+        document.getElementById('qw').innerText = w.en;
+        document.getElementById('qr').innerText = w.ru;
+        document.getElementById('qr').classList.add('hidden');
+        document.getElementById('count').innerText = "Осталось: " + deck.length;
     }
 
-    renderList();
+    render();
 </script>
 </body>
 </html>
