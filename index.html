@@ -2,72 +2,163 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>My Personal Dictionary</title>
+    <title>My Dictionary</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; background: #f0f2f5; color: #333; }
+        body { font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; background: #f0f2f5; }
         nav { display: flex; gap: 10px; margin-bottom: 20px; }
-        button { cursor: pointer; padding: 12px; border: none; border-radius: 8px; font-weight: bold; transition: 0.2s; flex: 1; }
-        .btn-nav { background: #fff; color: #555; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .btn-nav.active { background: #007bff; color: white; }
+        button { cursor: pointer; padding: 12px; border: none; border-radius: 8px; font-weight: bold; flex: 1; }
+        .active { background: #007bff; color: white; }
         .hidden { display: none; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        input { padding: 12px; border: 1px solid #ddd; border-radius: 6px; width: 100%; box-sizing: border-box; margin-bottom: 10px; font-size: 16px; }
-        .btn-main { background: #28a745; color: white; padding: 15px; font-size: 16px; width: 100%; }
-        .word-item { background: #fff; padding: 12px; margin: 8px 0; border-radius: 8px; display: flex; justify-content: space-between; border-left: 4px solid #007bff; align-items: center; }
-        #quiz-area { text-align: center; padding: 40px 10px; }
-        #quiz-word { font-size: 32px; font-weight: bold; }
-        #quiz-translation { font-size: 22px; color: #28a745; margin: 20px 0; font-weight: 500; min-height: 30px; }
-        .hint { font-size: 12px; color: #007bff; margin-top: -8px; margin-bottom: 10px; display: block; height: 15px; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        input { padding: 12px; border: 1px solid #ddd; border-radius: 6px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
+        .btn-add { background: #28a745; color: white; width: 100%; }
+        .word-item { background: white; padding: 10px; margin: 5px 0; border-radius: 8px; display: flex; justify-content: space-between; border-left: 4px solid #007bff; }
+        #quiz-area { text-align: center; padding: 20px 0; }
+        #quiz-word { font-size: 28px; font-weight: bold; display: block; margin-bottom: 15px; }
+        #quiz-trans { font-size: 20px; color: #28a745; margin: 15px 0; min-height: 25px; }
+        .hint { font-size: 12px; color: #007bff; display: block; margin: -5px 0 10px 2px; height: 15px; }
     </style>
 </head>
 <body>
 
 <nav>
-    <button id="btn-add" class="btn-nav active" onclick="showTab('add')">Словарь</button>
-    <button id="btn-quiz" class="btn-nav" onclick="showTab('quiz')">Тренировка</button>
+    <button id="btn-tab-add" class="active" onclick="showTab('add')">Словарь</button>
+    <button id="btn-tab-quiz" onclick="showTab('quiz')">Тренировка</button>
 </nav>
 
 <div id="tab-add">
     <div class="card">
-        <h3>Добавить слово</h3>
         <input type="text" id="eng" placeholder="English..." oninput="autoTranslate(this.value)">
         <span id="auto-hint" class="hint"></span>
         <input type="text" id="rus" placeholder="Перевод...">
-        <button class="btn-main" onclick="addWord()">Сохранить</button>
+        <button class="btn-add" onclick="addWord()">Сохранить</button>
     </div>
     <div id="word-list"></div>
 </div>
 
 <div id="tab-quiz" class="hidden">
     <div class="card" id="quiz-area">
-        <div id="quiz-counter" style="color:#888; margin-bottom:10px;"></div>
-        <span id="quiz-word">...</span>
-        <div id="quiz-translation" class="hidden"></div>
-        <button class="btn-nav" style="width:100%; margin-bottom:10px; border:1px solid #ddd" onclick="showTranslation()">Проверить</button>
-        <button class="btn-nav" style="background:#007bff; color:white; width:100%" onclick="nextQuizWord()">Дальше →</button>
+        <div id="quiz-count" style="font-size:12px; color:gray"></div>
+        <span id="quiz-word">Нажми "Дальше"</span>
+        <div id="quiz-trans" class="hidden"></div>
+        <button onclick="document.getElementById('quiz-trans').classList.remove('hidden')" style="width:100%; margin-bottom:10px">Проверить</button>
+        <button onclick="nextWord()" style="background:#007bff; color:white; width:100%">Дальше →</button>
     </div>
 </div>
 
 <script>
-    // РАЗДЕЛЯЕМ БАЗУ НА ДВЕ ЧАСТИ (чтобы строки были короче)
-    const basePart1 = {
-        "ability": "способность", "about": "о", "above": "над", "accept": "принимать", "according": "согласно", "account": "счет", "across": "через", "action": "действие", "activity": "деятельность", "actually": "на самом деле", "add": "добавить", "address": "адрес", "administration": "администрация", "admit": "признавать", "adult": "взрослый", "affect": "влиять", "after": "после", "again": "снова", "against": "против", "age": "возраст", "agency": "агентство", "agent": "агент", "ago": "назад", "agree": "соглашаться", "agreement": "соглашение", "ahead": "впереди", "air": "воздух", "all": "все", "allow": "позволять", "almost": "почти", "alone": "один", "along": "вдоль", "already": "уже", "also": "также", "although": "хотя", "always": "всегда", "american": "американец", "among": "среди", "amount": "количество", "analysis": "анализ", "and": "и", "animal": "животное", "another": "другой", "answer": "ответ", "any": "любой", "anyone": "кто угодно", "anything": "что угодно", "appear": "появляться", "apply": "применять", "approach": "подход", "area": "область", "argue": "спорить", "arm": "рука", "around": "вокруг", "arrive": "прибывать", "art": "искусство", "article": "статья", "artist": "художник", "as": "как", "ask": "спрашивать", "assume": "предполагать", "at": "в", "attack": "атака", "attention": "внимание", "attorney": "адвокат", "audience": "аудитория", "author": "автор", "authority": "власть", "available": "доступный", "avoid": "избегать", "away": "прочь", "baby": "малыш", "back": "назад", "bad": "плохой", "bag": "сумка", "ball": "мяч", "bank": "банк", "bar": "бар", "base": "база", "be": "быть", "beat": "бить", "beautiful": "красивый", "because": "потому что", "become": "становиться", "bed": "кровать", "before": "перед", "begin": "начинать", "behavior": "поведение", "behind": "позади", "believe": "верить", "benefit": "выгода", "best": "лучший", "better": "лучше", "between": "между", "beyond": "за пределами", "big": "большой", "bill": "счет", "billion": "миллиард", "bit": "кусочек", "black": "черный", "blood": "кровь", "blue": "синий", "board": "доска", "body": "тело", "book": "книга", "born": "рожденный", "both": "оба", "box": "коробка", "boy": "мальчик", "break": "ломать", "bring": "приносить", "brother": "брат", "budget": "бюджет", "build": "строить", "building": "здание", "business": "бизнес", "but": "но", "buy": "покупать", "by": "кем-то", "call": "звонить", "camera": "камера", "campaign": "кампания", "can": "мочь", "cancer": "рак", "candidate": "кандидат", "capital": "столица", "car": "машина", "card": "карта", "care": "забота", "career": "карьера", "carry": "нести", "case": "случай", "catch": "ловить", "cause": "причина", "cell": "клетка", "center": "центр", "central": "центральный", "century": "век", "certain": "определенный", "certainly": "конечно", "chair": "стул", "challenge": "вызов", "chance": "шанс", "change": "менять", "character": "персонаж", "charge": "заряд/плата", "check": "проверять", "child": "ребенок", "choice": "выбор", "choose": "выбирать", "church": "церковь", "citizen": "гражданин", "city": "город", "civil": "гражданский", "claim": "заявлять", "class": "класс", "clear": "ясный", "clearly": "ясно", "close": "закрывать", "coach": "тренер", "cold": "холодный", "collection": "коллекция", "college": "колледж", "color": "цвет", "come": "приходить", "commercial": "реклама", "common": "обычный", "community": "сообщество", "company": "компания", "compare": "сравнивать", "computer": "компьютер", "concern": "беспокойство", "condition": "условие", "conference": "конференция", "congress": "конгресс", "consider": "рассматривать", "consumer": "потребитель", "contain": "содержать", "continue": "продолжать", "control": "контроль", "cost": "стоимость", "could": "мог бы", "country": "страна", "couple": "пара", "course": "курс", "court": "суд", "cover": "покрывать", "create": "создавать", "crime": "преступление", "cultural": "культурный", "culture": "культура", "cup": "чашка", "current": "текущий", "customer": "клиент", "cut": "резать"
+    // Короткие строки, чтобы мобильный редактор не «ругался»
+    const base = {
+        "ability": "способность", "about": "о", "above": "над", "accept": "принять",
+        "across": "через", "action": "действие", "add": "добавить", "adult": "взрослый",
+        "agree": "согласиться", "alive": "живой", "allow": "позволять", "always": "всегда",
+        "appear": "появляться", "arrive": "прибывать", "ask": "спрашивать", "awful": "ужасный",
+        "bad": "плохой", "beautiful": "красивый", "believe": "верить", "big": "большой",
+        "borrow": "одалживать", "boy": "мальчик", "break": "ломать", "bring": "приносить",
+        "call": "звонить", "careful": "осторожный", "carry": "нести", "change": "менять",
+        "cheap": "дешевый", "choice": "выбор", "city": "город", "clean": "чистый",
+        "close": "закрывать", "cold": "холодный", "common": "обычный", "correct": "верный",
+        "dark": "темный", "day": "день", "decide": "решать", "deep": "глубокий",
+        "describe": "описывать", "different": "разный", "do": "делать", "door": "дверь",
+        "dream": "мечтать", "drink": "пить", "early": "ранний", "easy": "легкий",
+        "eat": "есть", "enough": "достаточно", "every": "каждый", "explain": "объяснять",
+        "fall": "падать", "far": "далеко", "feel": "чувствовать", "find": "находить",
+        "finish": "закончить", "food": "еда", "forget": "забывать", "friend": "друг",
+        "get": "получать", "girl": "девочка", "give": "давать", "go": "идти",
+        "good": "хороший", "guess": "угадывать", "happen": "случаться", "happy": "счастливый",
+        "hard": "тяжелый", "hear": "слышать", "help": "помогать", "high": "высокий",
+        "hope": "надеяться", "hot": "горячий", "hour": "час", "house": "дом",
+        "huge": "огромный", "idea": "идея", "important": "важный", "improve": "улучшать",
+        "job": "работа", "keep": "держать", "kind": "добрый", "know": "знать",
+        "large": "большой", "laugh": "смеяться", "learn": "учить", "leave": "уходить",
+        "lend": "давать в долг", "life": "жизнь", "listen": "слушать", "little": "маленький",
+        "long": "длинный", "look": "смотреть", "lose": "терять", "love": "любовь",
+        "make": "делать", "many": "много", "mean": "значить", "meet": "встречать",
+        "move": "двигаться", "name": "имя", "near": "рядом", "need": "нуждаться",
+        "never": "никогда", "new": "новый", "next": "следующий", "night": "ночь",
+        "often": "часто", "old": "старый", "open": "открывать", "order": "заказ",
+        "own": "собственный", "part": "часть", "pass": "проходить", "pay": "платить",
+        "people": "люди", "place": "место", "play": "играть", "possible": "возможный",
+        "prefer": "предпочитать", "probably": "вероятно", "problem": "проблема", "promise": "обещать",
+        "quick": "быстрый", "read": "читать", "ready": "готовый", "real": "настоящий",
+        "remember": "помнить", "repair": "чинить", "right": "правый", "run": "бежать",
+        "same": "тот же", "say": "говорить", "see": "видеть", "send": "отправлять",
+        "show": "показывать", "simple": "простой", "sleep": "спать", "small": "маленький",
+        "smile": "улыбаться", "soon": "скоро", "speak": "говорить", "start": "начинать",
+        "stop": "стоп", "strong": "сильный", "suggest": "предлагать", "take": "брать",
+        "talk": "разговаривать", "tell": "рассказывать", "think": "думать", "time": "время",
+        "try": "пытаться", "turn": "поворачивать", "understand": "понимать", "use": "использовать",
+        "very": "очень", "wait": "ждать", "walk": "гулять", "want": "хотеть",
+        "watch": "смотреть", "water": "вода", "way": "путь", "week": "неделя",
+        "well": "хорошо", "what": "что", "where": "где", "white": "белый",
+        "who": "кто", "why": "почему", "work": "работать", "worry": "беспокоиться",
+        "write": "писать", "wrong": "неправильный", "year": "год", "yes": "да", "young": "молодой"
     };
 
-    const basePart2 = {
-        "dark": "темный", "data": "данные", "daughter": "дочь", "day": "день", "dead": "мертвый", "deal": "сделка", "death": "смерть", "debate": "дебаты", "decade": "десятилетие", "decide": "решать", "decision": "решение", "deep": "глубокий", "defense": "защита", "degree": "степень", "describe": "описывать", "design": "дизайн", "despite": "несмотря на", "detail": "деталь", "determine": "определять", "develop": "развивать", "development": "развитие", "die": "умирать", "difference": "разница", "different": "разный", "difficult": "трудный", "dinner": "ужин", "direction": "направление", "director": "директор", "discover": "открывать", "discuss": "обсуждать", "discussion": "обсуждение", "disease": "болезнь", "do": "делать", "doctor": "врач", "dog": "собака", "door": "дверь", "down": "вниз", "draw": "рисовать", "dream": "мечта", "drive": "водить", "drop": "ронять", "drug": "лекарство", "during": "в течение", "each": "каждый", "early": "ранний", "east": "восток", "easy": "легкий", "eat": "есть", "economic": "экономический", "economy": "экономика", "edge": "край", "education": "образование", "effect": "эффект", "effort": "усилие", "eight": "восемь", "either": "либо", "election": "выборы", "else": "еще", "employee": "сотрудник", "end": "конец", "energy": "энергия", "enjoy": "наслаждаться", "enough": "достаточно", "enter": "входить", "entire": "целый", "environment": "среда", "especially": "особенно", "establish": "устанавливать", "even": "даже", "evening": "вечер", "event": "событие", "ever": "когда-либо", "every": "каждый", "everybody": "все", "everyone": "каждый", "everything": "все", "evidence": "доказательство", "exactly": "точно", "example": "пример", "executive": "руководитель", "exist": "существовать", "expect": "ожидать", "experience": "опыт", "expert": "эксперт", "explain": "объяснять", "eye": "глаз", "face": "лицо", "fact": "факт", "factor": "фактор", "fail": "неудача", "fall": "падать", "family": "семья", "far": "далеко", "fast": "быстрый", "father": "отец", "fear": "страх", "federal": "федеральный", "feel": "чувствовать", "feeling": "чувство", "few": "мало", "field": "поле", "fight": "драться", "figure": "фигура", "fill": "наполнять", "film": "фильм", "final": "финальный", "finally": "наконец", "financial": "финансовый", "find": "находить", "fine": "хороший", "finger": "палец", "finish": "заканчивать", "fire": "огонь", "firm": "фирма", "first": "первый", "fish": "рыба", "five": "пять", "floor": "пол", "fly": "летать", "focus": "фокус", "follow": "следовать", "food": "еда", "foot": "нога", "for": "для", "force": "сила", "foreign": "иностранный", "forget": "забывать", "form": "форма", "former": "бывший", "forward": "вперед", "four": "четыре", "free": "свободный", "friend": "друг", "from": "из", "front": "передний", "full": "полный", "fund": "фонд", "future": "будущее", "game": "игра", "garden": "сад", "gas": "газ", "general": "общий", "generation": "поколение", "get": "получать", "girl": "девочка", "give": "давать", "glass": "стекло", "go": "идти", "goal": "цель", "good": "хороший", "government": "правительство", "great": "великий", "green": "зеленый", "ground": "земля", "group": "группа", "grow": "расти", "growth": "рост", "guess": "угадывать", "guy": "парень", "hair": "волосы", "half": "половина", "hand": "рука", "hang": "висеть", "happen": "случаться", "happy": "счастливый", "hard": "трудный", "have": "иметь", "he": "он", "head": "голова", "health": "здоровье", "hear": "слышать", "heart": "сердце", "heat": "жара", "heavy": "тяжелый", "help": "помощь", "her": "ее", "here": "здесь", "herself": "сама", "high": "высокий", "him": "его", "himself": "сам", "his": "его", "history": "история", "hit": "удар", "hold": "держать", "home": "дом", "hope": "надеяться", "hospital": "больница", "hot": "горячий", "hotel": "отель", "hour": "час", "house": "дом", "how": "как", "however": "однако", "huge": "огромный", "human": "человек", "hundred": "сто", "husband": "муж", "idea": "идея", "identify": "узнавать", "if": "если", "imagine": "воображать", "impact": "влияние", "important": "важный", "improve": "улучшать", "in": "в", "include": "включать", "including": "включая", "increase": "увеличивать", "indeed": "в самом деле", "indicate": "указывать", "individual": "личность", "industry": "промышленность", "information": "информация", "inside": "внутри", "instead": "вместо", "institution": "институт", "interest": "интерес", "international": "международный", "interview": "интервью", "into": "в", "investment": "инвестиции", "involve": "вовлекать", "issue": "вопрос", "it": "это", "item": "предмет", "its": "его", "itself": "само", "job": "работа", "join": "присоединяться", "just": "просто", "keep": "держать", "key": "ключ", "kid": "ребенок", "kill": "убивать", "kind": "тип/добрый", "kitchen": "кухня", "know": "знать", "knowledge": "знание", "land": "земля", "language": "язык", "large": "большой", "last": "последний", "late": "поздний", "later": "позже", "laugh": "смеяться", "law": "закон", "lawyer": "юрист", "lead": "вести", "leader": "лидер", "learn": "учить", "least": "наименее", "leave": "покидать", "left": "левый", "leg": "нога", "legal": "законный", "less": "меньше", "let": "позволять", "letter": "письмо", "level": "уровень", "lie": "лгать", "life": "жизнь", "light": "свет", "like": "нравиться", "likely": "вероятно", "line": "линия", "list": "список", "listen": "слушать", "little": "маленький", "live": "жить", "local": "местный", "long": "длинный", "look": "смотреть", "lose": "терять", "loss": "потеря", "lot": "много", "love": "любовь", "low": "низкий", "machine": "машина", "magazine": "журнал", "main": "главный", "maintain": "поддерживать", "major": "крупный", "majority": "большинство", "make": "делать", "man": "мужчина", "manage": "управлять", "management": "управление", "manager": "менеджер", "many": "много", "market": "рынок", "marriage": "брак", "material": "материал", "matter": "дело", "may": "может", "maybe": "может быть", "me": "мне", "mean": "значить", "measure": "мера", "media": "медиа", "medical": "медицинский", "meet": "встречать", "meeting": "встреча", "member": "член", "memory": "память", "mention": "упоминать", "message": "сообщение", "method": "метод", "middle": "середина", "might": "может быть", "military": "военный", "million": "миллион", "mind": "разум", "minute": "минута", "miss": "скучать", "mission": "миссия", "model": "модель", "modern": "современный", "moment": "момент", "money": "деньги", "month": "месяц", "more": "больше", "morning": "утро", "most": "самый", "mother": "мать", "mouth": "рот", "move": "двигаться", "movement": "движение", "movie": "фильм", "much": "много", "music": "музыка", "must": "должен", "my": "мой", "myself": "я сам", "name": "имя", "nation": "нация", "national": "национальный", "natural": "естественный", "nature": "природа", "near": "рядом", "nearly": "почти", "necessary": "необходимый", "need": "нуждаться", "network": "сеть", "never": "никогда", "new": "новый", "news": "новости", "next": "следующий", "nice": "хороший", "night": "ночь", "no": "нет", "none": "никто", "nor": "ни", "north": "север", "not": "не", "note": "заметка", "nothing": "ничего", "notice": "замечать", "now": "сейчас", "number": "число", "occur": "происходить", "off": "выкл", "offer": "предлагать", "office": "офис", "officer": "офицер", "often": "часто", "oh": "о", "oil": "масло", "ok": "ок", "old": "старый", "on": "на", "once": "однажды", "one": "один", "only": "только", "onto": "на", "open": "открывать", "operation": "операция", "opportunity": "возможность", "option": "опция", "or": "или", "order": "заказ", "organization": "организация", "others": "другие", "our": "наш", "out": "из", "outside": "снаружи", "over": "над", "own": "собственный", "owner": "владелец", "page": "страница", "pain": "боль", "paint": "краска", "paper": "бумага", "parent": "родитель", "part": "часть", "participant": "участник", "particular": "особый", "particularly": "особенно", "partner": "партнер", "party": "вечеринка", "pass": "проходить", "past": "прошлое", "patient": "пациент", "pattern": "шаблон", "pay": "платить", "peace": "мир", "people": "люди", "per": "за", "perform": "выполнять", "performance": "выступление", "perhaps": "возможно", "period": "период", "person": "человек", "personal": "личный", "phone": "телефон", "physical": "физический", "pick": "выбирать", "picture": "картина", "piece": "кусок", "place": "место", "plan": "план", "plant": "растение", "play": "играть", "player": "игрок", "point": "точка", "police": "полиция", "policy": "политика", "political": "политический", "politics": "политика", "poor": "бедный", "popular": "популярный", "population": "население", "position": "позиция", "positive": "положительный", "possible": "возможный", "power": "сила", "practice": "практика", "prepare": "готовить", "present": "настоящее", "president": "президент", "pressure": "давление", "pretty": "довольно", "prevent": "предотвращать", "price": "цена", "private": "частный", "probably": "вероятно", "problem": "проблема", "process": "процесс", "produce": "производить", "product": "продукт", "production": "производство", "professional": "профессиональный", "professor": "профессор", "program": "программа", "project": "проект", "property": "собственность", "protect": "защищать", "prove": "доказывать", "provide": "предоставлять", "public": "публичный", "pull": "тянуть", "purpose": "цель", "push": "толкать", "put": "класть", "quality": "качество", "question": "вопрос", "quickly": "быстро", "quite": "вполне", "race": "гонка", "radio": "радио", "raise": "поднимать", "range": "диапазон", "rate": "ставка", "rather": "скорее", "reach": "достигать", "read": "читать", "ready": "готовый", "real": "реальный", "reality": "реальность", "realize": "осознавать", "really": "действительно", "reason": "причина", "receive": "получать", "recent": "недавний", "recently": "недавно", "recognize": "узнавать", "record": "запись", "red": "красный", "reduce": "уменьшать", "reflect": "отражать", "region": "регион", "relate": "относиться", "relationship": "отношения", "religious": "религиозный", "remain": "оставаться", "remember": "помнить", "remove": "удалять", "report": "отчет", "represent": "представлять", "require": "требовать", "research": "исследование", "resource": "ресурс", "respond": "отвечать", "response": "ответ", "responsibility": "ответственность", "rest": "отдых", "result": "результат", "return": "возвращаться", "reveal": "раскрывать", "rich": "богатый", "right": "правый", "rise": "подниматься", "risk": "риск", "road": "дорога", "rock": "камень", "role": "роль", "room": "комната", "rule": "правило", "run": "бежать", "safe": "безопасный", "same": "тот же", "save": "спасать", "say": "говорить", "scene": "сцена", "school": "школа", "science": "наука", "scientist": "ученый", "score": "счет", "sea": "море", "season": "сезон", "seat": "сиденье", "second": "второй", "section": "секция", "security": "безопасность", "see": "видеть", "seek": "искать", "seem": "казаться", "sell": "продавать", "send": "посылать", "senior": "старший", "sense": "смысл", "series": "серия", "serious": "серьезный", "serve": "служить", "service": "служба", "set": "набор", "seven": "семь", "several": "несколько", "shake": "трясти", "share": "делиться", "she": "она", "shoot": "стрелять", "short": "короткий", "shot": "выстрел", "should": "должен", "shoulder": "плечо", "show": "показывать", "side": "сторона", "sign": "знак", "significant": "значительный", "similar": "похожий", "simple": "простой", "simply": "просто", "since": "с тех пор", "sing": "петь", "single": "одиночный", "sister": "сестра", "sit": "сидеть", "site": "сайт", "situation": "ситуация", "six": "шесть", "size": "размер", "skill": "навык", "skin": "кожа", "small": "маленький", "smile": "улыбка", "so": "так", "social": "социальный", "society": "общество", "soldier": "солдат", "some": "некоторые", "somebody": "кто-то", "someone": "кто-то", "something": "что-то", "sometimes": "иногда", "son": "сын", "song": "песня", "soon": "скоро", "sort": "сорт", "sound": "звук", "source": "источник", "south": "юг", "space": "космос", "speak": "говорить", "special": "специальный", "specific": "конкретный", "speech": "речь", "spend": "тратить", "sport": "спорт", "spring": "весна", "staff": "персонал", "stage": "стадия", "stand": "стоять", "standard": "стандарт", "star": "звезда", "start": "начинать", "state": "государство", "statement": "заявление", "station": "станция", "stay": "оставаться", "step": "шаг", "still": "все еще", "stock": "запас", "stop": "остановка", "store": "магазин", "story": "история", "strategy": "стратегия", "street": "улица", "strong": "сильный", "structure": "структура", "student": "студент", "study": "учиться", "stuff": "вещи", "style": "стиль", "subject": "предмет", "success": "успех", "successful": "успешный", "such": "такой", "suddenly": "вдруг", "suggest": "предлагать", "summer": "лето", "support": "поддержка", "sure": "уверенный", "surface": "поверхность", "system": "система", "table": "стол", "take": "брать", "talk": "говорить", "task": "задача", "tax": "налог", "teach": "учить", "teacher": "учитель", "team": "команда", "technology": "технология", "television": "телевидение", "tell": "рассказывать", "ten": "десять", "tend": "иметь тенденцию", "term": "термин", "test": "тест", "than": "чем", "thank": "благодарить", "that": "тот", "the": "артикль", "their": "их", "them": "им", "themselves": "они сами", "then": "затем", "theory": "теория", "there": "там", "these": "эти", "they": "они", "thing": "вещь", "think": "думать", "third": "третий", "this": "этот", "those": "те", "though": "хотя", "thought": "мысль", "thousand": "тысяча", "threat": "угроза", "three": "три", "through": "через", "throughout": "на протяжении", "throw": "бросать", "thus": "таким образом", "time": "время", "to": "к", "today": "сегодня", "together": "вместе", "tonight": "сегодня вечером", "too": "тоже", "top": "верх", "total": "итого", "tough": "жесткий", "toward": "к", "town": "город", "trade": "торговля", "traditional": "традиционный", "training": "тренировка", "travel": "путешествовать", "treat": "лечить", "treatment": "лечение", "tree": "дерево", "trial": "испытание", "trip": "поездка", "trouble": "беда", "true": "верный", "truth": "правда", "try": "пытаться", "turn": "поворот", "tv": "тв", "two": "два", "type": "тип", "under": "под", "understand": "понимать", "unit": "единица", "until": "пока не", "up": "вверх", "upon": "на", "us": "нам", "use": "использовать", "usually": "обычно", "value": "значение", "various": "различные", "very": "очень", "victim": "жертва", "view": "вид", "violence": "насилие", "visit": "визит", "voice": "голос", "vote": "голосовать", "wait": "ждать", "walk": "гулять", "wall": "стена", "want": "хотеть", "war": "война", "watch": "смотреть", "water": "вода", "way": "путь", "we": "мы", "weapon": "оружие", "wear": "носить", "week": "неделя", "weight": "вес", "well": "хорошо", "west": "запад", "western": "западный", "what": "что", "whatever": "что бы ни", "when": "когда", "where": "где", "whether": "будь то", "which": "который", "while": "пока", "white": "белый", "who": "кто", "whole": "целый", "whom": "кого", "whose": "чей", "why": "почему", "wide": "широкий"
-    };
-
-    // Объединяем части при запуске
-    const base = {...basePart1, ...basePart2};
-
-    let words = JSON.parse(localStorage.getItem('myWords')) || [];
+    let myWords = JSON.parse(localStorage.getItem('myWords')) || [];
     let deck = [];
 
-    function autoTranslate(val) {
-        const input = val.toLowerCase().trim();
+    function autoTranslate(v) {
+        const word = v.toLowerCase().trim();
         const hint = document.getElementById('auto-hint');
         const rusInput = document.getElementById('rus');
-        
-        if (base[input]) {
-            hint.innerText = `
+        if (base[word]) {
+            hint.innerText = "Найдено в базе!";
+            rusInput.value = base[word];
+        } else {
+            hint.innerText = "";
+        }
+    }
+
+    function addWord() {
+        const eng = document.getElementById('eng').value.trim();
+        const rus = document.getElementById('rus').value.trim();
+        if (eng && rus) {
+            myWords.push({eng, rus});
+            localStorage.setItem('myWords', JSON.stringify(myWords));
+            document.getElementById('eng').value = '';
+            document.getElementById('rus').value = '';
+            renderList();
+        }
+    }
+
+    function renderList() {
+        const div = document.getElementById('word-list');
+        div.innerHTML = `<h4>Мои слова (${myWords.length}):</h4>`;
+        [...myWords].reverse().forEach((w, i) => {
+            div.innerHTML += `<div class="word-item">
+                <span><b>${w.eng}</b> — ${w.rus}</span>
+                <button onclick="deleteWord(${myWords.indexOf(w)})" style="color:red; background:none; padding:0; flex:none">✕</button>
+            </div>`;
+        });
+    }
+
+    function deleteWord(i) {
+        myWords.splice(i, 1);
+        localStorage.setItem('myWords', JSON.stringify(myWords));
+        renderList();
+    }
+
+    function nextWord() {
+        if (myWords.length === 0) return alert("Добавь слова!");
+        if (deck.length === 0) deck = [...myWords].sort(() => Math.random() - 0.5);
+        const w = deck.pop();
+        document.getElementById('quiz-word').innerText = w.eng;
+        document.getElementById('quiz-trans').innerText = w.rus;
+        document.getElementById('quiz-trans').classList.add('hidden');
+        document.getElementById('quiz-count').innerText = `Осталось: ${deck.length}`;
+    }
+
+    function showTab(t) {
+        document.getElementById('tab-add').classList.toggle('hidden', t !== 'add');
+        document.getElementById('tab-quiz').classList.toggle('hidden', t !== 'quiz');
+        document.getElementById('btn-tab-add').classList.toggle('active', t === 'add');
+        document.getElementById('btn-tab-quiz').classList.toggle('active', t === 'quiz');
+        if (t === 'quiz') nextWord();
+    }
+
+    renderList();
+</script>
+</body>
+</html>
