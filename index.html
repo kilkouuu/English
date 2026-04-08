@@ -5,114 +5,389 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Easy English</title>
     <style>
-        body { font-family: sans-serif; max-width: 500px; margin: auto; padding: 20px; background: #f0f2f5; }
+        * { box-sizing: border-box; }
+        body { font-family: sans-serif; max-width: 500px; margin: auto; padding: 16px; background: #f0f2f5; }
         nav { display: flex; gap: 10px; margin-bottom: 20px; }
-        button { cursor: pointer; padding: 12px; border: none; border-radius: 8px; flex: 1; font-weight: bold; }
+        button { cursor: pointer; padding: 12px; border: none; border-radius: 8px; flex: 1; font-weight: bold; font-size: 15px; }
         .active { background: #007bff; color: white; }
         .hidden { display: none; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        input { padding: 12px; border: 1px solid #ddd; width: 100%; box-sizing: border-box; margin-bottom: 10px; border-radius: 6px; }
-        .word-item { background: white; padding: 10px; margin-top: 10px; border-radius: 8px; display: flex; justify-content: space-between; border-left: 4px solid #007bff; align-items: center; }
+        input { padding: 12px; border: 1px solid #ddd; width: 100%; margin-bottom: 10px; border-radius: 6px; font-size: 16px; }
+        .word-item { background: white; padding: 10px 14px; margin-top: 10px; border-radius: 8px; display: flex; justify-content: space-between; border-left: 4px solid #007bff; align-items: center; }
+        #search { margin-bottom: 10px; }
+        .stats { font-size: 12px; color: gray; margin: 8px 0; }
+        #quiz-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+        #quiz-tabs button { font-size: 13px; padding: 8px; background: #eee; color: #333; }
+        #quiz-tabs button.active { background: #007bff; color: white; }
+        #options { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+        .opt-btn { background: #f4f4f4; color: #333; border-radius: 8px; padding: 12px; font-size: 15px; text-align: left; border: 2px solid transparent; transition: 0.2s; }
+        .opt-btn.correct { background: #d4edda; border-color: #28a745; color: #155724; }
+        .opt-btn.wrong { background: #f8d7da; border-color: #dc3545; color: #721c24; }
+        #score-bar { height: 6px; background: #eee; border-radius: 3px; margin: 10px 0; overflow: hidden; }
+        #score-fill { height: 100%; background: #28a745; width: 0%; transition: width 0.4s; border-radius: 3px; }
     </style>
 </head>
 <body>
 
 <nav>
-    <button id="b1" class="active" onclick="tab('add')">Словарь</button>
-    <button id="b2" onclick="tab('quiz')">Тренировка</button>
+    <button id="b1" class="active" onclick="tab('add')">📖 Словарь</button>
+    <button id="b2" onclick="tab('quiz')">🎯 Тренировка</button>
 </nav>
 
+<!-- СЛОВАРЬ -->
 <div id="add">
     <div class="card">
         <input type="text" id="e" placeholder="English..." oninput="auto(this.value)">
         <input type="text" id="r" placeholder="Перевод...">
         <button onclick="add()" style="background:#28a745; color:white; width:100%">Сохранить</button>
     </div>
+    <input type="text" id="search" placeholder="🔍 Поиск по словам..." oninput="render()" style="margin-top:14px;">
     <div id="list"></div>
-    <button onclick="clearAll()" style="margin-top:20px; background:none; color:gray; font-size:10px; border:1px solid #ccc">Очистить всё (сброс)</button>
+    <button onclick="clearAll()" style="margin-top:16px; background:none; color:gray; font-size:11px; border:1px solid #ccc; flex:none; width:100%;">Очистить мои слова (сброс)</button>
 </div>
 
+<!-- ТРЕНИРОВКА -->
 <div id="quiz" class="hidden">
+    <div id="quiz-tabs">
+        <button id="qt1" class="active" onclick="setMode('flash')">Карточки</button>
+        <button id="qt2" onclick="setMode('choice')">Выбор</button>
+        <button id="qt3" onclick="setMode('type')">Письмо</button>
+    </div>
     <div class="card" style="text-align:center">
-        <div id="count" style="font-size:12px; color:gray"></div>
-        <h2 id="qw">...</h2>
-        <h3 id="qr" class="hidden" style="color:#28a745"></h3>
-        <button onclick="document.getElementById('qr').classList.remove('hidden')" style="width:100%; margin-bottom:10px">Проверить</button>
-        <button onclick="next()" style="background:#007bff; color:white; width:100%">Дальше →</button>
+        <div id="count" class="stats"></div>
+        <div id="score-bar"><div id="score-fill"></div></div>
+        <h2 id="qw" style="font-size:28px; margin:16px 0 8px">...</h2>
+        <p id="hint" style="font-size:12px; color:#aaa; margin:0 0 14px;"></p>
+
+        <!-- Карточки -->
+        <div id="mode-flash">
+            <h3 id="qr" class="hidden" style="color:#28a745; font-size:22px;"></h3>
+            <button onclick="showAns()" style="width:100%; margin-bottom:10px; background:#eee; color:#333;">Показать ответ</button>
+            <div style="display:flex; gap:8px;">
+                <button onclick="markCard(false)" style="background:#f8d7da; color:#721c24; flex:1;">✗ Не знал</button>
+                <button onclick="markCard(true)" style="background:#d4edda; color:#155724; flex:1;">✓ Знал</button>
+            </div>
+        </div>
+
+        <!-- Выбор -->
+        <div id="mode-choice" class="hidden">
+            <div id="options"></div>
+            <button id="next-choice" onclick="next()" class="hidden" style="background:#007bff; color:white; width:100%; margin-top:14px;">Дальше →</button>
+        </div>
+
+        <!-- Письмо -->
+        <div id="mode-type" class="hidden">
+            <input type="text" id="type-input" placeholder="Введи перевод..." style="text-align:center; font-size:18px;">
+            <button onclick="checkType()" style="background:#007bff; color:white; width:100%; margin-bottom:10px;">Проверить</button>
+            <div id="type-result" style="font-size:16px; margin:8px 0;"></div>
+            <button id="next-type" onclick="next()" class="hidden" style="background:#555; color:white; width:100%;">Дальше →</button>
+        </div>
     </div>
 </div>
 
 <script>
-    const base = {"alive":"живой","awful":"ужасный","borrow":"одалживать","cheap":"дешевый","common":"обычный","correct":"верный","decide":"решать","deep":"глубокий","explain":"объяснять","guess":"угадывать","happen":"случаться","improve":"улучшать","loud":"громкий","probably":"вероятно","suggest":"предлагать","worry":"беспокоиться"};
+// ===================== БАЗА СЛОВ (Oxford 3000+) =====================
+const base = {
+"able":"способный","about":"около / о","above":"выше / над","accept":"принимать","accident":"несчастный случай","according":"согласно","account":"счёт / учётная запись","accurate":"точный","achieve":"достигать","across":"через / напротив","act":"действовать / акт","action":"действие","active":"активный","activity":"деятельность","add":"добавлять","address":"адрес","admire":"восхищаться","admit":"признавать","adult":"взрослый","advance":"продвигаться","advantage":"преимущество","affect":"влиять","afford":"позволять себе","afraid":"испуганный","age":"возраст","agree":"соглашаться","ahead":"впереди","aim":"цель / целиться","all":"весь","allow":"позволять","alone":"один","along":"вдоль","already":"уже","also":"также","although":"хотя","always":"всегда","amount":"количество","ancient":"древний","anger":"злость","angry":"злой","animal":"животное","announce":"объявлять","another":"другой","answer":"ответ","appear":"появляться","area":"площадь / район","argue":"спорить","arrive":"прибывать","article":"статья","ask":"спрашивать","attack":"атаковать","attention":"внимание","attract":"привлекать","avoid":"избегать",
+"back":"назад / спина","base":"основание","become":"становиться","before":"до / перед","behaviour":"поведение","believe":"верить","better":"лучше","between":"между","bit":"кусочек","body":"тело","bother":"беспокоить","break":"ломать / перерыв","bring":"приносить","build":"строить","burn":"гореть","busy":"занятый",
+"call":"звонить / называть","calm":"спокойный","carefully":"тщательно","carry":"нести","cause":"причина / вызывать","certain":"определённый","change":"менять","character":"характер","charge":"заряжать / платить","check":"проверять","choice":"выбор","choose":"выбирать","clear":"ясный","clever":"умный","climb":"карабкаться","close":"закрывать / близкий","cold":"холодный","compare":"сравнивать","complete":"завершать","complain":"жаловаться","consider":"рассматривать","contain":"содержать","continue":"продолжать","control":"контролировать","cook":"готовить","cool":"прохладный","copy":"копировать","cost":"стоить","count":"считать","country":"страна","cover":"накрывать","create":"создавать","cross":"пересекать","crowd":"толпа","cut":"резать",
+"damage":"повреждение","dangerous":"опасный","dark":"тёмный","data":"данные","dead":"мёртвый","deal":"сделка / справляться","deliver":"доставлять","depend":"зависеть","describe":"описывать","destroy":"уничтожать","detail":"деталь","develop":"развивать","difference":"разница","different":"другой","difficult":"трудный","direct":"направлять / прямой","discover":"обнаруживать","discuss":"обсуждать","distance":"расстояние","dream":"мечтать / мечта","drive":"водить машину","drop":"капля / уронить","during":"в течение",
+"early":"ранний / рано","easy":"лёгкий","effect":"эффект","else":"иначе","empty":"пустой","energy":"энергия","enjoy":"наслаждаться","enough":"достаточно","enter":"входить","equal":"равный","even":"даже / ровный","evening":"вечер","every":"каждый","except":"кроме","expect":"ожидать","experience":"опыт","express":"выражать","extra":"дополнительный",
+"fact":"факт","fail":"проваливаться","fair":"справедливый","fall":"падать","famous":"знаменитый","feel":"чувствовать","fight":"бороться","fill":"наполнять","finally":"наконец","find":"находить","finish":"заканчивать","fit":"подходить / подтянутый","flat":"плоский","follow":"следовать","force":"сила / заставлять","foreign":"иностранный","forget":"забывать","forward":"вперёд","free":"свободный","fresh":"свежий","full":"полный","future":"будущее",
+"general":"общий","get":"получать","give":"давать","go":"идти","goal":"цель","grow":"расти","guide":"гид / руководить",
+"hand":"рука","handle":"ручка / справляться","happen":"случаться","hard":"твёрдый / трудно","hate":"ненавидеть","have":"иметь","hear":"слышать","heart":"сердце","heavy":"тяжёлый","help":"помогать","hide":"прятать","high":"высокий","hold":"держать","honest":"честный","hope":"надеяться / надежда","however":"однако","huge":"огромный","hurt":"причинять боль",
+"idea":"идея","identify":"идентифицировать","ignore":"игнорировать","image":"изображение","important":"важный","include":"включать","increase":"увеличивать","indeed":"действительно","information":"информация","instead":"вместо","intend":"намереваться","interest":"интерес","introduce":"представлять","involve":"включать / вовлекать","issue":"проблема / выпускать",
+"join":"присоединяться","judge":"судить / судья","just":"просто / справедливый",
+"keep":"держать","kill":"убивать","kind":"вид / добрый","know":"знать",
+"lack":"недостаток","large":"большой","last":"последний / продолжаться","later":"позже","laugh":"смеяться","lead":"вести","learn":"учить","leave":"уходить","less":"меньше","level":"уровень","lie":"лгать / лежать","likely":"вероятный","limit":"ограничивать","listen":"слушать","live":"жить","look":"смотреть","lose":"терять","low":"низкий",
+"make":"делать","manage":"управлять","many":"много","mark":"отметка","maybe":"может быть","mean":"значить","measure":"измерять","meet":"встречать","mention":"упоминать","mind":"ум / возражать","miss":"скучать / пропускать","mix":"смешивать","more":"больше","most":"большинство","move":"двигаться","much":"много","must":"должен",
+"name":"имя / называть","natural":"естественный","near":"близко","need":"нуждаться","never":"никогда","nice":"приятный","normal":"нормальный","note":"замечать / заметка","notice":"замечать",
+"offer":"предлагать","often":"часто","old":"старый","once":"однажды","open":"открывать","opinion":"мнение","other":"другой","over":"над","own":"собственный",
+"part":"часть","pass":"передавать / проходить","past":"прошлое","pay":"платить","perfect":"идеальный","place":"место","plan":"планировать","play":"играть","point":"указывать / точка","possible":"возможный","powerful":"мощный","practice":"практика","prepare":"готовить","present":"настоящее / представлять","prevent":"предотвращать","produce":"производить","protect":"защищать","prove":"доказывать","provide":"обеспечивать","public":"общественный","pull":"тянуть","push":"толкать","put":"класть",
+"question":"вопрос","quickly":"быстро","quiet":"тихий",
+"reach":"достигать","read":"читать","real":"настоящий","receive":"получать","recognize":"признавать","record":"запись / записывать","reduce":"уменьшать","remain":"оставаться","remember":"помнить","remove":"удалять","replace":"заменять","require":"требовать","result":"результат","return":"возвращать","rise":"подниматься","risk":"риск","role":"роль","run":"бегать",
+"safe":"безопасный","save":"сохранять","say":"говорить","seem":"казаться","send":"посылать","serious":"серьёзный","set":"устанавливать","share":"делиться","show":"показывать","simple":"простой","since":"с тех пор","situation":"ситуация","skill":"навык","sleep":"спать","slow":"медленный","small":"маленький","solve":"решать","someone":"кто-то","sort":"сортировать / вид","sound":"звук","speak":"говорить","spend":"тратить","stand":"стоять","start":"начинать","stay":"оставаться","step":"шаг","stop":"останавливать","strong":"сильный","study":"изучать","suddenly":"вдруг","support":"поддерживать","sure":"уверенный",
+"take":"брать","talk":"разговаривать","teach":"обучать","tell":"сказать","test":"испытывать / тест","then":"тогда","thing":"вещь","think":"думать","throw":"бросать","time":"время","together":"вместе","try":"пробовать","turn":"поворачивать",
+"understand":"понимать","up":"вверх","use":"использовать","usually":"обычно",
+"various":"различный","view":"вид / видеть","visit":"посещать",
+"wait":"ждать","walk":"ходить пешком","want":"хотеть","warm":"тёплый","watch":"смотреть / наблюдать","way":"путь","week":"неделя","well":"хорошо / колодец","while":"пока","win":"побеждать","wish":"желать","without":"без","wonder":"удивляться","work":"работать","world":"мир","write":"писать","wrong":"неправильный",
+"year":"год","yet":"ещё",
+"ability":"способность","absence":"отсутствие","absolutely":"абсолютно","abuse":"злоупотреблять","access":"доступ","accompany":"сопровождать","accurate":"точный","ache":"боль","achieve":"достигать","actual":"фактический","adapt":"адаптировать","addition":"добавление","adequate":"достаточный","adjust":"настраивать","admire":"восхищаться","adopt":"принимать","advantage":"преимущество","adventure":"приключение","advice":"совет","advise":"советовать","agenda":"повестка дня","aggressive":"агрессивный","aid":"помощь","alive":"живой","alliance":"альянс","allow":"позволять","alter":"изменять","alternative":"альтернатива","ambition":"амбиция","amount":"количество","analysis":"анализ","ancient":"древний","anger":"злость","announce":"объявлять","anxiety":"тревога","apologize":"извиняться","appeal":"апеллировать / привлекательность","appointment":"встреча / назначение","appreciate":"ценить","approach":"подходить / подход","approve":"одобрять","arise":"возникать","arrange":"организовывать","awful":"ужасный",
+"background":"фон / происхождение","balance":"баланс","benefit":"выгода","boring":"скучный","brave":"храбрый","broad":"широкий",
+"capable":"способный","capture":"захватывать","challenge":"вызов","comment":"комментировать","communicate":"общаться","community":"сообщество","competition":"конкуренция","concentration":"концентрация","concern":"беспокойство","conclusion":"заключение","confidence":"уверенность","confirm":"подтверждать","conflict":"конфликт","connection":"связь","conscious":"осознанный","consequence":"последствие","consistent":"последовательный","context":"контекст","conversation":"разговор","cooperation":"сотрудничество","correct":"верный","critical":"критический","culture":"культура","curious":"любопытный","current":"текущий",
+"decade":"десятилетие","decision":"решение","declaration":"заявление","decline":"снижаться","dedication":"преданность","defend":"защищать","definition":"определение","delay":"задержка","demonstrate":"демонстрировать","deny":"отрицать","depression":"депрессия","desire":"желание","determine":"определять","direction":"направление","disappointment":"разочарование","discipline":"дисциплина","diversity":"разнообразие","divide":"делить","doubt":"сомнение","dramatic":"драматический",
+"effective":"эффективный","efficient":"эффективный","effort":"усилие","element":"элемент","encourage":"поощрять","environment":"окружающая среда","essential":"существенный","estimate":"оценивать","evaluate":"оценивать","evidence":"доказательство","evolution":"эволюция","examine":"изучать","exchange":"обмен","exist":"существовать","expand":"расширяться","explanation":"объяснение","extreme":"крайний",
+"facility":"объект / помещение","feature":"особенность","focus":"сосредотачиваться","following":"следующий","foundation":"фундамент","function":"функция","fundamental":"фундаментальный",
+"generation":"поколение","global":"глобальный","gradually":"постепенно","grateful":"благодарный",
+"habit":"привычка","handle":"справляться","health":"здоровье","helpful":"полезный","highlight":"выделять","historical":"исторический","human":"человеческий / человек",
+"impact":"воздействие","implement":"осуществлять","improve":"улучшать","independent":"независимый","indicate":"указывать","influence":"влияние","innovate":"внедрять инновации","instance":"пример","integrate":"интегрировать","intention":"намерение","interpret":"интерпретировать",
+"justify":"обосновывать",
+"knowledge":"знание",
+"launch":"запускать","leadership":"лидерство","legacy":"наследие",
+"maintain":"поддерживать","majority":"большинство","maximum":"максимум","minimum":"минимум","mission":"миссия","motivation":"мотивация",
+"network":"сеть","nowadays":"в настоящее время",
+"objective":"цель","obstacle":"препятствие","obvious":"очевидный","opportunity":"возможность","organization":"организация","outcome":"результат","overcome":"преодолевать",
+"particular":"особый","perception":"восприятие","perform":"выступать","personality":"личность","perspective":"перспектива","phenomenon":"явление","policy":"политика","potential":"потенциал","pressure":"давление","priority":"приоритет","process":"процесс","progress":"прогресс","promise":"обещание","property":"собственность","proposal":"предложение","purpose":"цель",
+"quality":"качество","quantity":"количество",
+"realistic":"реалистичный","reflect":"отражать","relationship":"отношения","relevant":"уместный","rely":"полагаться","represent":"представлять","reputation":"репутация","research":"исследование","resource":"ресурс","response":"ответ","responsibility":"ответственность","reveal":"раскрывать",
+"strategy":"стратегия","struggle":"бороться","succeed":"преуспевать","summary":"краткое изложение","survive":"выживать",
+"tendency":"тенденция","therefore":"поэтому","tradition":"традиция","transform":"трансформировать","trend":"тенденция","typically":"обычно",
+"unique":"уникальный","unlike":"в отличие от","update":"обновлять",
+"valuable":"ценный","variety":"разнообразие","version":"версия","violence":"насилие","vision":"видение / зрение","volunteer":"доброволец",
+"weakness":"слабость","willing":"готовый","wisdom":"мудрость","worth":"стоимость",
+"achievement":"достижение","announce":"объявлять","approval":"одобрение","atmosphere":"атмосфера","attitude":"отношение / позиция","awareness":"осознание",
+"boundary":"граница","breakdown":"поломка","bright":"яркий","brilliant":"блестящий",
+"campaign":"кампания","celebrate":"праздновать","classic":"классический","colleague":"коллега","combination":"комбинация","comfort":"комфорт","committee":"комитет","concentrate":"концентрироваться","confidence":"уверенность","contribution":"вклад","controversial":"спорный","convince":"убеждать","cope":"справляться","creativity":"творчество","critical":"критический",
+"deadline":"крайний срок","defense":"защита","definition":"определение","delicate":"деликатный","demand":"требование","dependence":"зависимость","detail":"деталь","devote":"посвящать","digital":"цифровой","discipline":"дисциплина","discussion":"обсуждение","distribution":"распределение","donate":"жертвовать",
+"economy":"экономика","emergency":"чрезвычайная ситуация","emotional":"эмоциональный","emphasis":"акцент","eventually":"в конце концов","everyday":"повседневный",
+"familiar":"знакомый","fantasy":"фантазия","flexible":"гибкий","fluent":"беглый","formal":"формальный","frequent":"частый",
+"genuine":"настоящий / искренний","grateful":"благодарный",
+"hesitate":"колебаться","hope":"надежда","however":"однако","humble":"скромный",
+"impact":"воздействие","infinite":"бесконечный","injury":"травма","innocent":"невинный",
+"judge":"судья","junior":"младший",
+"limit":"ограничивать","literal":"буквальный","local":"местный","logical":"логичный",
+"manner":"манера","modern":"современный",
+"narrative":"повествование","negative":"отрицательный","noble":"благородный",
+"occur":"происходить","operate":"работать / управлять","original":"оригинальный",
+"patient":"терпеливый / пациент","pause":"пауза","persistent":"настойчивый","physical":"физический","positive":"положительный","practical":"практический","predict":"предсказывать","previous":"предыдущий","principle":"принцип","privacy":"конфиденциальность","professional":"профессиональный",
+"reaction":"реакция","reasonable":"разумный","reform":"реформа","reject":"отвергать","reliable":"надёжный","resolve":"решать","respect":"уважать","restore":"восстанавливать","reveal":"раскрывать","reward":"вознаграждение",
+"sacrifice":"жертвовать","satisfy":"удовлетворять","scenario":"сценарий","significant":"значительный","solution":"решение","specific":"конкретный","stable":"стабильный","standard":"стандарт","statement":"заявление","strength":"сила","structure":"структура","suggest":"предлагать","supply":"поставлять / запас","system":"система",
+"task":"задача","technical":"технический","temporary":"временный","tension":"напряжение","theme":"тема","throughout":"на протяжении","transfer":"передавать","trust":"доверять",
+"underline":"подчёркивать","unite":"объединять","universal":"универсальный","useful":"полезный",
+"valid":"действительный","variable":"переменная","vital":"жизненно важный",
+"yield":"уступать"
+};
 
-    let myWords = JSON.parse(localStorage.getItem('myWords')) || [];
-    let deck = [];
+// ===================== СОСТОЯНИЕ =====================
+let myWords = JSON.parse(localStorage.getItem('myWords')) || [];
+let deck = [];
+let current = null;
+let quizMode = 'flash';
+let score = { correct: 0, total: 0 };
+let answerShown = false;
 
-    function auto(v) {
-        let w = v.toLowerCase().trim();
-        if(base[w]) document.getElementById('r').value = base[w];
+// ===================== АВТОЗАПОЛНЕНИЕ =====================
+function auto(v) {
+    let w = v.toLowerCase().trim();
+    if (base[w]) document.getElementById('r').value = base[w];
+}
+
+// ===================== ДОБАВИТЬ СЛОВО =====================
+function add() {
+    let en = document.getElementById('e').value.trim();
+    let ru = document.getElementById('r').value.trim();
+    if (en && ru) {
+        let exists = myWords.find(w => (w.en || w.eng || '').toLowerCase() === en.toLowerCase());
+        if (exists) { alert("Это слово уже есть в твоём словаре!"); return; }
+        myWords.push({ en, ru });
+        save();
+        document.getElementById('e').value = '';
+        document.getElementById('r').value = '';
+        render();
     }
+}
 
-    function add() {
-        let en = document.getElementById('e').value.trim();
-        let ru = document.getElementById('r').value.trim();
-        if(en && ru) {
-            myWords.push({en, ru}); // Сохраняем в новом формате
-            save();
-            document.getElementById('e').value = '';
-            document.getElementById('r').value = '';
-            render();
-        }
-    }
+function save() {
+    localStorage.setItem('myWords', JSON.stringify(myWords));
+}
 
-    function save() {
-        localStorage.setItem('myWords', JSON.stringify(myWords));
-    }
+// ===================== РЕНДЕР СПИСКА =====================
+function render() {
+    let q = (document.getElementById('search').value || '').toLowerCase();
+    let d = document.getElementById('list');
 
-    function render() {
-        let d = document.getElementById('list');
-        d.innerHTML = `<h4>Слов: ${myWords.length}</h4>`;
-        myWords.forEach((w, i) => {
-            // Проверка: берем en или eng, ru или rus
-            let displayEn = w.en || w.eng || "—";
-            let displayRu = w.ru || w.rus || "—";
-            d.innerHTML += `<div class="word-item"><span><b>${displayEn}</b> - ${displayRu}</span><button onclick="del(${i})" style="color:red; background:none; border:none; font-size:18px">✕</button></div>`;
+    // Объединяем: сначала мои слова, потом база (отфильтрованные)
+    let mySet = new Set(myWords.map(w => (w.en || w.eng || '').toLowerCase()));
+    let baseItems = Object.entries(base).filter(([k, v]) =>
+        !mySet.has(k.toLowerCase()) && (!q || k.includes(q) || v.includes(q))
+    );
+    let myFiltered = myWords.filter(w => {
+        let en = (w.en || w.eng || '').toLowerCase();
+        let ru = (w.ru || w.rus || '').toLowerCase();
+        return !q || en.includes(q) || ru.includes(q);
+    });
+
+    d.innerHTML = `<div class="stats">Мои слова: ${myWords.length} | База: ${Object.keys(base).length} слов</div>`;
+
+    if (myFiltered.length > 0) {
+        d.innerHTML += `<div style="font-size:12px; color:#555; margin:6px 0 4px; font-weight:bold;">📌 Мои слова</div>`;
+        myFiltered.forEach((w, i) => {
+            let en = w.en || w.eng || "—";
+            let ru = w.ru || w.rus || "—";
+            d.innerHTML += `<div class="word-item"><span><b>${en}</b> — ${ru}</span><button onclick="del(${i})" style="color:red;background:none;border:none;font-size:18px;padding:4px 8px;">✕</button></div>`;
         });
     }
 
-    function del(i) {
-        myWords.splice(i, 1);
+    if (q && baseItems.length > 0) {
+        d.innerHTML += `<div style="font-size:12px; color:#555; margin:10px 0 4px; font-weight:bold;">📚 База (${baseItems.length})</div>`;
+        baseItems.slice(0, 30).forEach(([en, ru]) => {
+            d.innerHTML += `<div class="word-item" style="border-left-color:#aaa;"><span><b>${en}</b> — ${ru}</span><button onclick="addFromBase('${en}','${ru.replace(/'/g,"&#39;")}')" style="color:#28a745;background:none;border:none;font-size:20px;padding:4px 8px;">+</button></div>`;
+        });
+        if (baseItems.length > 30) d.innerHTML += `<p style="font-size:12px; color:gray; text-align:center;">…ещё ${baseItems.length - 30}. Уточни поиск.</p>`;
+    }
+}
+
+function addFromBase(en, ru) {
+    let exists = myWords.find(w => (w.en || w.eng || '').toLowerCase() === en.toLowerCase());
+    if (!exists) {
+        myWords.push({ en, ru });
         save();
         render();
     }
+}
 
-    function clearAll() {
-        if(confirm("Удалить все слова?")) {
-            myWords = [];
-            save();
-            render();
-        }
-    }
-
-    function tab(t) {
-        document.getElementById('add').className = (t=='add' ? '' : 'hidden');
-        document.getElementById('quiz').className = (t=='quiz' ? '' : 'hidden');
-        document.getElementById('b1').className = (t=='add' ? 'active' : '');
-        document.getElementById('b2').className = (t=='quiz' ? 'active' : '');
-        if(t == 'quiz') next();
-    }
-
-    function next() {
-        if(myWords.length == 0) return alert("Добавь слова!");
-        if(deck.length == 0) deck = [...myWords].sort(() => Math.random() - 0.5);
-        let w = deck.pop();
-        document.getElementById('qw').innerText = w.en || w.eng;
-        document.getElementById('qr').innerText = w.ru || w.rus;
-        document.getElementById('qr').classList.add('hidden');
-        document.getElementById('count').innerText = "В пачке осталось: " + deck.length;
-    }
-
+function del(i) {
+    myWords.splice(i, 1);
+    save();
     render();
+}
+
+function clearAll() {
+    if (confirm("Удалить все свои слова?")) {
+        myWords = [];
+        save();
+        render();
+    }
+}
+
+// ===================== ВКЛАДКИ =====================
+function tab(t) {
+    document.getElementById('add').className = (t === 'add' ? '' : 'hidden');
+    document.getElementById('quiz').className = (t === 'quiz' ? '' : 'hidden');
+    document.getElementById('b1').className = (t === 'add' ? 'active' : '');
+    document.getElementById('b2').className = (t === 'quiz' ? 'active' : '');
+    if (t === 'quiz') { score = { correct: 0, total: 0 }; next(); }
+}
+
+// ===================== РЕЖИМ ТРЕНИРОВКИ =====================
+function setMode(m) {
+    quizMode = m;
+    ['flash','choice','type'].forEach(x => {
+        document.getElementById('mode-' + x).className = (x === m ? '' : 'hidden');
+        document.getElementById('qt' + (['flash','choice','type'].indexOf(x) + 1)).className = (x === m ? 'active' : '');
+    });
+    score = { correct: 0, total: 0 };
+    next();
+}
+
+// ===================== ПОЛУЧИТЬ СЛОВО =====================
+function getPool() {
+    // Используем мои слова + базу как одну колоду
+    let pool = myWords.map(w => ({ en: w.en || w.eng, ru: w.ru || w.rus }));
+    if (pool.length < 4) {
+        // Добавляем слова из базы если мало
+        let extras = Object.entries(base).map(([en, ru]) => ({ en, ru }));
+        pool = [...pool, ...extras].filter((v, i, a) => a.findIndex(x => x.en === v.en) === i);
+    }
+    return pool;
+}
+
+function next() {
+    let pool = getPool();
+    if (pool.length === 0) { alert("Добавь слова!"); return; }
+    if (deck.length === 0) deck = [...pool].sort(() => Math.random() - 0.5);
+    current = deck.pop();
+    answerShown = false;
+
+    // Определяем направление: рандомно en→ru или ru→en
+    let reverse = Math.random() > 0.5 && myWords.length > 0;
+    if (reverse) {
+        document.getElementById('qw').innerText = current.ru;
+        document.getElementById('hint').innerText = '→ русский→английский';
+        current._ask = 'ru';
+    } else {
+        document.getElementById('qw').innerText = current.en;
+        document.getElementById('hint').innerText = '→ английский→русский';
+        current._ask = 'en';
+    }
+
+    updateScore();
+
+    // Сброс UI
+    if (quizMode === 'flash') {
+        document.getElementById('qr').className = 'hidden';
+        document.getElementById('qr').innerText = reverse ? current.en : current.ru;
+    } else if (quizMode === 'choice') {
+        buildOptions(pool, reverse);
+        document.getElementById('next-choice').className = 'hidden';
+    } else {
+        document.getElementById('type-input').value = '';
+        document.getElementById('type-result').innerText = '';
+        document.getElementById('next-type').className = 'hidden';
+    }
+}
+
+function updateScore() {
+    let pct = score.total > 0 ? Math.round(score.correct / score.total * 100) : 0;
+    document.getElementById('count').innerText = `В пачке: ${deck.length} | Верно: ${score.correct}/${score.total} (${pct}%)`;
+    document.getElementById('score-fill').style.width = pct + '%';
+}
+
+// ===================== КАРТОЧКИ =====================
+function showAns() {
+    document.getElementById('qr').className = '';
+    answerShown = true;
+}
+
+function markCard(knew) {
+    if (!answerShown) { showAns(); return; }
+    score.total++;
+    if (knew) score.correct++;
+    next();
+}
+
+// ===================== ВЫБОР ВАРИАНТА =====================
+function buildOptions(pool, reverse) {
+    let correct = reverse ? current.en : current.ru;
+    let wrong = pool.filter(w => w.en !== current.en)
+        .sort(() => Math.random() - 0.5).slice(0, 3)
+        .map(w => reverse ? w.en : w.ru);
+    let opts = [...wrong, correct].sort(() => Math.random() - 0.5);
+    let d = document.getElementById('options');
+    d.innerHTML = '';
+    opts.forEach(o => {
+        let btn = document.createElement('button');
+        btn.className = 'opt-btn';
+        btn.innerText = o;
+        btn.onclick = () => checkOption(o, correct);
+        d.appendChild(btn);
+    });
+}
+
+function checkOption(chosen, correct) {
+    score.total++;
+    let btns = document.querySelectorAll('.opt-btn');
+    btns.forEach(b => {
+        b.onclick = null;
+        if (b.innerText === correct) b.className = 'opt-btn correct';
+        else if (b.innerText === chosen && chosen !== correct) b.className = 'opt-btn wrong';
+    });
+    if (chosen === correct) score.correct++;
+    updateScore();
+    document.getElementById('next-choice').className = '';
+}
+
+// ===================== ПИСЬМО =====================
+function checkType() {
+    let input = document.getElementById('type-input').value.trim().toLowerCase();
+    let correct = (current._ask === 'en' ? current.ru : current.en).toLowerCase();
+    let res = document.getElementById('type-result');
+    score.total++;
+    if (input === correct || correct.split(' / ').some(v => v.trim() === input)) {
+        res.innerHTML = `<span style="color:#28a745">✓ Верно!</span>`;
+        score.correct++;
+    } else {
+        res.innerHTML = `<span style="color:#dc3545">✗ Было: <b>${correct}</b></span>`;
+    }
+    updateScore();
+    document.getElementById('next-type').className = '';
+}
+
+document.getElementById('type-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') checkType();
+});
+
+render();
 </script>
 </body>
 </html>
