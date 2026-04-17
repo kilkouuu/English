@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -29,6 +28,8 @@
         .res-btn { cursor: pointer; width: 100%; padding: 14px; font-size: 15px; border-radius: 10px; border: none; font-weight: bold; margin-top: 10px; }
         .missed-list { text-align: left; margin-top: 12px; max-height: 180px; overflow-y: auto; }
         .missed-item { background: #fff0f0; border-left: 4px solid #dc3545; padding: 8px 12px; margin-top: 6px; border-radius: 6px; font-size: 13px; }
+        .transfer-box { background: #f8f9fa; border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-top: 10px; }
+        textarea.export-area { width: 100%; height: 100px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; font-family: monospace; resize: none; background: white; }
     </style>
 </head>
 <body>
@@ -45,6 +46,27 @@
         <input type="text" id="r" placeholder="Перевод...">
         <button onclick="addWord()" style="background:#28a745;color:white;width:100%;border:none;border-radius:8px;padding:12px;font-size:15px;font-weight:bold;cursor:pointer;">Сохранить</button>
     </div>
+
+    <!-- ЭКСПОРТ / ИМПОРТ -->
+    <div class="card" style="margin-top:14px;">
+        <p style="font-size:13px;font-weight:bold;margin:0 0 10px;color:#555;">📤 Перенос слов между браузерами</p>
+
+        <!-- Экспорт -->
+        <button onclick="exportWords()" style="background:#17a2b8;color:white;width:100%;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:bold;cursor:pointer;">📋 Скопировать мои слова</button>
+        <div id="export-area-wrap" class="hidden" style="margin-top:10px;">
+            <textarea id="export-area" class="export-area" readonly></textarea>
+            <p style="font-size:12px;color:gray;margin:6px 0 0;">Выдели всё и скопируй → вставь в другом браузере ниже</p>
+        </div>
+
+        <div style="border-top:1px solid #eee;margin:14px 0;"></div>
+
+        <!-- Импорт -->
+        <p style="font-size:13px;color:#555;margin:0 0 8px;">Вставь скопированный код сюда:</p>
+        <textarea id="import-area" class="export-area" placeholder="Вставь сюда..." style="height:80px;"></textarea>
+        <button onclick="importWords()" style="background:#6f42c1;color:white;width:100%;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:bold;cursor:pointer;margin-top:6px;">📥 Загрузить слова</button>
+        <div id="import-status" style="font-size:13px;text-align:center;margin-top:8px;min-height:18px;"></div>
+    </div>
+
     <input type="text" id="search" placeholder="🔍 Поиск..." oninput="render()" style="margin-top:14px;">
     <div id="list"></div>
     <button onclick="clearAll()" style="margin-top:14px;background:none;color:gray;font-size:11px;border:1px solid #ccc;border-radius:6px;padding:8px;width:100%;cursor:pointer;">Очистить все слова</button>
@@ -96,6 +118,46 @@ let deck = [], current = null, quizMode = 'flash';
 let score = { correct: 0, total: 0 };
 let missed = [], isRetry = false, answerShown = false;
 
+// ===== ЭКСПОРТ =====
+function exportWords() {
+    if (!myWords.length) { alert("Нет слов для экспорта!"); return; }
+    let code = btoa(unescape(encodeURIComponent(JSON.stringify(myWords))));
+    let wrap = document.getElementById('export-area-wrap');
+    let area = document.getElementById('export-area');
+    wrap.classList.remove('hidden');
+    area.value = code;
+    area.select();
+    try {
+        document.execCommand('copy');
+        area.style.borderColor = '#28a745';
+        setTimeout(() => area.style.borderColor = '#ddd', 2000);
+    } catch(e) {}
+}
+
+// ===== ИМПОРТ =====
+function importWords() {
+    let raw = document.getElementById('import-area').value.trim();
+    let status = document.getElementById('import-status');
+    if (!raw) { status.innerHTML = '<span style="color:#dc3545">⚠️ Вставь код сначала</span>'; return; }
+    try {
+        let imported = JSON.parse(decodeURIComponent(escape(atob(raw))));
+        if (!Array.isArray(imported)) throw new Error();
+        let added = 0;
+        imported.forEach(w => {
+            if (w.en && w.ru && !myWords.find(x => x.en.toLowerCase() === w.en.toLowerCase())) {
+                myWords.push({ en: w.en, ru: w.ru });
+                added++;
+            }
+        });
+        save(); render();
+        document.getElementById('import-area').value = '';
+        status.innerHTML = `<span style="color:#28a745">✓ Добавлено слов: ${added} (дубли пропущены)</span>`;
+    } catch(e) {
+        status.innerHTML = '<span style="color:#dc3545">⚠️ Неверный код. Скопируй заново.</span>';
+    }
+}
+
+// ===== СЛОВАРЬ =====
 function addWord() {
     let en = document.getElementById('e').value.trim();
     let ru = document.getElementById('r').value.trim();
@@ -122,6 +184,7 @@ function render() {
 function delWord(i) { myWords.splice(i, 1); save(); render(); }
 function clearAll() { if (confirm("Удалить все слова?")) { myWords = []; save(); render(); } }
 
+// ===== ВКЛАДКИ =====
 function tab(t) {
     document.getElementById('add').className  = t==='add'  ? '' : 'hidden';
     document.getElementById('quiz').className = t==='quiz' ? '' : 'hidden';
@@ -139,6 +202,7 @@ function setMode(m) {
     startFresh();
 }
 
+// ===== РАУНДЫ =====
 function startFresh() {
     isRetry = false; missed = [];
     score = { correct: 0, total: 0 };
@@ -190,6 +254,7 @@ function updateCount() {
     document.getElementById('score-fill').style.width = pct + '%';
 }
 
+// ===== РЕЗУЛЬТАТЫ =====
 function showResults() {
     document.getElementById('quiz-card').classList.add('hidden');
     document.getElementById('results-screen').classList.remove('hidden');
@@ -210,6 +275,7 @@ function showResults() {
     `;
 }
 
+// ===== КАРТОЧКИ =====
 function showAns() { document.getElementById('qr').classList.remove('hidden'); answerShown = true; }
 function markCard(knew) {
     if (!answerShown) { showAns(); return; }
@@ -218,6 +284,7 @@ function markCard(knew) {
     next();
 }
 
+// ===== ВЫБОР =====
 function buildOptions() {
     let correct = current.ru;
     let pool = myWords.map(w => ({en:w.en, ru:w.ru}));
@@ -244,6 +311,7 @@ function checkOption(chosen, correct) {
     document.getElementById('next-choice').classList.remove('hidden');
 }
 
+// ===== ПИСЬМО =====
 function checkType() {
     let inp = document.getElementById('type-input').value.trim().toLowerCase();
     if (!inp) return;
