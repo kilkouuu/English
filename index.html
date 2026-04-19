@@ -26,7 +26,7 @@
         .opt-btn.correct { background: #d4edda; border-color: #28a745; color: #155724; font-weight: bold; }
         .opt-btn.wrong { background: #f8d7da; border-color: #dc3545; color: #721c24; }
         .res-btn { cursor: pointer; width: 100%; padding: 14px; font-size: 15px; border-radius: 10px; border: none; font-weight: bold; margin-top: 10px; }
-        .level-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+        .level-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
         textarea.export-area { width: 100%; height: 100px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; font-family: monospace; resize: none; background: white; }
     </style>
 </head>
@@ -45,13 +45,12 @@
         <button onclick="addWord()" style="background:#28a745;color:white;width:100%;border:none;border-radius:8px;padding:12px;font-size:15px;font-weight:bold;cursor:pointer;">Сохранить</button>
     </div>
 
-    <!-- ЭКСПОРТ / ИМПОРТ -->
     <div class="card" style="margin-top:14px;">
         <p style="font-size:13px;font-weight:bold;margin:0 0 10px;color:#555;">📤 Перенос слов между браузерами</p>
         <button onclick="exportWords()" style="background:#17a2b8;color:white;width:100%;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:bold;cursor:pointer;">📋 Скопировать мои слова</button>
         <div id="export-area-wrap" class="hidden" style="margin-top:10px;">
             <textarea id="export-area" class="export-area" readonly></textarea>
-            <p style="font-size:12px;color:gray;margin:6px 0 0;">Выдели всё и скопируй → вставь в другом браузере ниже</p>
+            <p style="font-size:12px;color:gray;margin:6px 0 0;">Выдели всё → скопируй → вставь в другом браузере</p>
         </div>
         <div style="border-top:1px solid #eee;margin:14px 0;"></div>
         <p style="font-size:13px;color:#555;margin:0 0 8px;">Вставь скопированный код сюда:</p>
@@ -77,9 +76,8 @@
         <div id="score-bar"><div id="score-fill"></div></div>
         <div id="word-level" style="font-size:12px;color:#aaa;margin-bottom:4px;"></div>
         <h2 id="qw" style="font-size:28px;margin:8px 0 4px;">...</h2>
-        <p id="hint" style="font-size:12px;color:#bbb;margin:0 0 12px;"></p>
+        <p id="hint" style="font-size:12px;color:#bbb;margin:0 0 12px;">→ какой перевод?</p>
 
-        <!-- Карточки -->
         <div id="mode-flash">
             <h3 id="qr" class="hidden" style="color:#28a745;font-size:22px;margin:0 0 14px;"></h3>
             <button class="q-btn" onclick="showAns()" style="background:#eee;color:#333;">👁 Показать ответ</button>
@@ -89,13 +87,11 @@
             </div>
         </div>
 
-        <!-- Выбор -->
         <div id="mode-choice" class="hidden">
             <div id="options"></div>
             <button id="next-choice" class="q-btn hidden" onclick="next()" style="background:#007bff;color:white;margin-top:14px;">Дальше →</button>
         </div>
 
-        <!-- Письмо -->
         <div id="mode-type" class="hidden">
             <input type="text" id="type-input" placeholder="Введи перевод..." style="text-align:center;font-size:18px;">
             <button class="q-btn" onclick="checkType()" style="background:#007bff;color:white;">Проверить</button>
@@ -104,150 +100,165 @@
         </div>
     </div>
 
-    <!-- Итог раунда -->
     <div id="results-screen" class="hidden card" style="text-align:center;">
         <div id="results-body"></div>
     </div>
 </div>
 
 <script>
-// ===================== ДАННЫЕ =====================
-// Каждое слово хранит "level" от 0 до 5:
-// 0 = новое/не знаю  → вес 10 (очень часто)
-// 1 = слабо знаю     → вес 6
-// 2 = иногда знаю    → вес 4
-// 3 = знаю           → вес 2
-// 4 = хорошо знаю    → вес 1
-// 5 = отлично знаю   → вес 1 (раз в несколько раундов)
+// ====== УРОВНИ ======
+// level 0 → новое/не знаю  → показывать каждые ~1 слова
+// level 1 → слабо          → каждые ~3 слова
+// level 2 → средне         → каждые ~6 слов
+// level 3 → знаю           → каждые ~12 слов
+// level 4 → хорошо         → каждые ~25 слов
+// level 5 → отлично        → каждые ~50 слов
 
-const WEIGHTS = [10, 6, 4, 2, 1, 1];
-const LEVEL_LABELS = ['🔴 Новое', '🟠 Сложное', '🟡 Учу', '🟢 Знаю', '💙 Хорошо', '⭐ Отлично'];
+const LEVEL_LABELS = ['🔴 Новое','🟠 Сложное','🟡 Учу','🟢 Знаю','💙 Хорошо','⭐ Отлично'];
+const LEVEL_COLORS = ['#dc3545','#fd7e14','#ffc107','#28a745','#007bff','#6f42c1'];
+// Интервал — через сколько ДРУГИХ слов это слово снова может появиться
+const COOLDOWN = [0, 2, 5, 11, 24, 49];
 
 let myWords = JSON.parse(localStorage.getItem('myWords')) || [];
-let deck = [], current = null, quizMode = 'flash';
+let quizMode = 'flash';
 let score = { correct: 0, total: 0 };
 let answerShown = false;
 
-// Убедимся что у каждого слова есть level
+// Очередь для алгоритма
+let queue = [];         // [{en, ru, level}] — следующие слова
+let recentlyShown = []; // en последних показанных слов (для cooldown)
+let current = null;
+
 function ensureLevels() {
     myWords.forEach(w => { if (w.level === undefined) w.level = 0; });
 }
 
-// ===================== АЛГОРИТМ =====================
-function buildWeightedDeck() {
+// ====== АЛГОРИТМ ОЧЕРЕДИ ======
+// Выбираем следующее слово:
+// 1. Берём все слова у которых cooldown истёк
+// 2. Взвешиваем по уровню (низкий уровень = выше вес)
+// 3. Выбираем случайно с учётом весов
+// 4. Запрещаем повтор пока cooldown не истечёт
+
+function pickNext() {
     ensureLevels();
-    let deck = [];
-    myWords.forEach(w => {
-        let weight = WEIGHTS[Math.min(w.level, 5)];
-        // Слова с level 5 попадают только с вероятностью 30%
-        if (w.level >= 5 && Math.random() > 0.3) return;
-        for (let i = 0; i < weight; i++) {
-            deck.push({ en: w.en, ru: w.ru, level: w.level });
-        }
+    if (!myWords.length) return null;
+
+    // Доступные слова (не в cooldown)
+    let available = myWords.filter(w => {
+        let lastIdx = recentlyShown.lastIndexOf(w.en);
+        if (lastIdx === -1) return true;
+        let cooldown = COOLDOWN[Math.min(w.level, 5)];
+        return (recentlyShown.length - lastIdx) > cooldown;
     });
-    // Перемешиваем, но не даём одному слову идти подряд
-    deck = deck.sort(() => Math.random() - 0.5);
-    // Убираем подряд идущие одинаковые слова
-    for (let i = 1; i < deck.length; i++) {
-        if (deck[i].en === deck[i-1].en) {
-            let j = i + 1 + Math.floor(Math.random() * (deck.length - i - 1));
-            if (j < deck.length) [deck[i], deck[j]] = [deck[j], deck[i]];
-        }
+
+    // Если все в cooldown — берём слово с самым давним показом
+    if (!available.length) {
+        available = [...myWords].sort((a, b) => {
+            let ai = recentlyShown.lastIndexOf(a.en);
+            let bi = recentlyShown.lastIndexOf(b.en);
+            return ai - bi;
+        });
+        available = [available[0]];
     }
-    return deck;
+
+    // Взвешенный случайный выбор
+    // Вес: level 0=100, 1=40, 2=15, 3=5, 4=2, 5=1
+    const W = [100, 40, 15, 5, 2, 1];
+    let totalWeight = available.reduce((s, w) => s + W[Math.min(w.level, 5)], 0);
+    let rand = Math.random() * totalWeight;
+    let chosen = available[0];
+    for (let w of available) {
+        rand -= W[Math.min(w.level, 5)];
+        if (rand <= 0) { chosen = w; break; }
+    }
+
+    // Обновляем историю (храним последние 60)
+    recentlyShown.push(chosen.en);
+    if (recentlyShown.length > 60) recentlyShown.shift();
+
+    return { en: chosen.en, ru: chosen.ru, level: chosen.level };
 }
 
 function updateLevel(en, knew) {
     let w = myWords.find(x => x.en === en);
     if (!w) return;
-    if (knew) {
-        w.level = Math.min((w.level || 0) + 1, 5);
-    } else {
-        w.level = Math.max((w.level || 0) - 1, 0);
-    }
+    if (knew) w.level = Math.min((w.level || 0) + 1, 5);
+    else      w.level = Math.max((w.level || 0) - 1, 0);
     save();
+    // Обновляем level в current тоже
+    if (current && current.en === en) current.level = w.level;
 }
 
-// ===================== ЭКСПОРТ / ИМПОРТ =====================
+// ====== ЭКСПОРТ / ИМПОРТ ======
 function exportWords() {
-    if (!myWords.length) { alert("Нет слов для экспорта!"); return; }
+    if (!myWords.length) { alert("Нет слов!"); return; }
     let code = btoa(unescape(encodeURIComponent(JSON.stringify(myWords))));
     let wrap = document.getElementById('export-area-wrap');
     let area = document.getElementById('export-area');
     wrap.classList.remove('hidden');
     area.value = code;
     area.select();
-    try { document.execCommand('copy'); area.style.borderColor = '#28a745'; setTimeout(() => area.style.borderColor = '#ddd', 2000); } catch(e) {}
+    try { document.execCommand('copy'); area.style.borderColor='#28a745'; setTimeout(()=>area.style.borderColor='#ddd',2000); } catch(e){}
 }
 
 function importWords() {
     let raw = document.getElementById('import-area').value.trim();
     let status = document.getElementById('import-status');
-    if (!raw) { status.innerHTML = '<span style="color:#dc3545">⚠️ Вставь код сначала</span>'; return; }
+    if (!raw) { status.innerHTML='<span style="color:#dc3545">⚠️ Вставь код сначала</span>'; return; }
     try {
         let imported = JSON.parse(decodeURIComponent(escape(atob(raw))));
         if (!Array.isArray(imported)) throw new Error();
         let added = 0;
         imported.forEach(w => {
-            if (w.en && w.ru && !myWords.find(x => x.en.toLowerCase() === w.en.toLowerCase())) {
-                myWords.push({ en: w.en, ru: w.ru, level: w.level || 0 });
+            if (w.en && w.ru && !myWords.find(x => x.en.toLowerCase()===w.en.toLowerCase())) {
+                myWords.push({ en:w.en, ru:w.ru, level: w.level||0 });
                 added++;
             }
         });
         save(); render();
-        document.getElementById('import-area').value = '';
-        status.innerHTML = `<span style="color:#28a745">✓ Добавлено: ${added} слов</span>`;
+        document.getElementById('import-area').value='';
+        status.innerHTML=`<span style="color:#28a745">✓ Добавлено: ${added} слов</span>`;
     } catch(e) {
-        status.innerHTML = '<span style="color:#dc3545">⚠️ Неверный код. Скопируй заново.</span>';
+        status.innerHTML='<span style="color:#dc3545">⚠️ Неверный код.</span>';
     }
 }
 
-// ===================== СЛОВАРЬ =====================
+// ====== СЛОВАРЬ ======
 function addWord() {
     let en = document.getElementById('e').value.trim();
     let ru = document.getElementById('r').value.trim();
     if (!en || !ru) return;
-    if (myWords.find(w => w.en.toLowerCase() === en.toLowerCase())) { alert("Уже есть!"); return; }
-    myWords.push({ en, ru, level: 0 });
+    if (myWords.find(w => w.en.toLowerCase()===en.toLowerCase())) { alert("Уже есть!"); return; }
+    myWords.push({ en, ru, level:0 });
     save(); render();
-    document.getElementById('e').value = '';
-    document.getElementById('r').value = '';
+    document.getElementById('e').value='';
+    document.getElementById('r').value='';
 }
 
 function save() { localStorage.setItem('myWords', JSON.stringify(myWords)); }
 
 function render() {
     ensureLevels();
-    let q = (document.getElementById('search').value || '').toLowerCase();
+    let q = (document.getElementById('search').value||'').toLowerCase();
     let d = document.getElementById('list');
     let filtered = myWords.filter(w => !q || w.en.toLowerCase().includes(q) || w.ru.toLowerCase().includes(q));
-
-    // Считаем статистику уровней
     let counts = [0,0,0,0,0,0];
-    myWords.forEach(w => counts[Math.min(w.level||0, 5)]++);
-
-    d.innerHTML = `<div class="stats">
-        Слов: ${myWords.length} &nbsp;·&nbsp;
-        🔴${counts[0]} 🟠${counts[1]} 🟡${counts[2]} 🟢${counts[3]} 💙${counts[4]} ⭐${counts[5]}
-    </div>`;
-
+    myWords.forEach(w => counts[Math.min(w.level||0,5)]++);
+    d.innerHTML = `<div class="stats">Слов: ${myWords.length} &nbsp;·&nbsp; 🔴${counts[0]} 🟠${counts[1]} 🟡${counts[2]} 🟢${counts[3]} 💙${counts[4]} ⭐${counts[5]}</div>`;
     filtered.forEach((w, i) => {
-        let lvl = Math.min(w.level || 0, 5);
-        let colors = ['#dc3545','#fd7e14','#ffc107','#28a745','#007bff','#6f42c1'];
+        let lvl = Math.min(w.level||0,5);
         d.innerHTML += `<div class="word-item">
-            <span>
-                <span class="level-dot" style="background:${colors[lvl]};"></span>
-                <b>${w.en}</b> — ${w.ru}
-            </span>
+            <span><span class="level-dot" style="background:${LEVEL_COLORS[lvl]};"></span><b>${w.en}</b> — ${w.ru}</span>
             <button onclick="delWord(${i})" style="color:red;background:none;border:none;font-size:18px;padding:4px 8px;cursor:pointer;">✕</button>
         </div>`;
     });
 }
 
-function delWord(i) { myWords.splice(i, 1); save(); render(); }
-function clearAll() { if (confirm("Удалить все слова?")) { myWords = []; save(); render(); } }
+function delWord(i) { myWords.splice(i,1); save(); render(); }
+function clearAll() { if(confirm("Удалить все?")) { myWords=[]; save(); render(); } }
 
-// ===================== ВКЛАДКИ =====================
+// ====== ВКЛАДКИ ======
 function tab(t) {
     document.getElementById('add').className  = t==='add'  ? '' : 'hidden';
     document.getElementById('quiz').className = t==='quiz' ? '' : 'hidden';
@@ -258,17 +269,17 @@ function tab(t) {
 
 function setMode(m) {
     quizMode = m;
-    ['flash','choice','type'].forEach((x, i) => {
+    ['flash','choice','type'].forEach((x,i) => {
         document.getElementById('mode-'+x).className = x===m ? '' : 'hidden';
         document.getElementById('qt'+(i+1)).className = x===m ? 'active' : '';
     });
     startFresh();
 }
 
-// ===================== РАУНД =====================
+// ====== РАУНД ======
 function startFresh() {
-    score = { correct: 0, total: 0 };
-    deck = buildWeightedDeck();
+    score = { correct:0, total:0 };
+    recentlyShown = [];
     document.getElementById('results-screen').classList.add('hidden');
     document.getElementById('quiz-card').classList.remove('hidden');
     next();
@@ -276,124 +287,128 @@ function startFresh() {
 
 function next() {
     if (!myWords.length) { alert("Добавь слова!"); return; }
-    if (!deck.length) {
-        if (score.total > 0) { showResults(); return; }
-        deck = buildWeightedDeck();
+
+    // Каждые 20 слов — показываем мини-итог и предлагаем продолжить
+    if (score.total > 0 && score.total % 20 === 0) {
+        showRoundSummary(); return;
     }
-    current = deck.pop();
+
+    current = pickNext();
+    if (!current) return;
     answerShown = false;
 
-    // Показываем уровень слова
-    let lvl = Math.min(current.level || 0, 5);
+    let lvl = Math.min(current.level||0, 5);
     document.getElementById('word-level').innerText = LEVEL_LABELS[lvl];
+    document.getElementById('word-level').style.color = LEVEL_COLORS[lvl];
     document.getElementById('qw').innerText = current.en;
-    document.getElementById('hint').innerText = '→ какой перевод?';
     updateCount();
 
-    if (quizMode === 'flash') {
+    if (quizMode==='flash') {
         document.getElementById('qr').innerText = current.ru;
         document.getElementById('qr').classList.add('hidden');
-    } else if (quizMode === 'choice') {
+    } else if (quizMode==='choice') {
         buildOptions();
         document.getElementById('next-choice').classList.add('hidden');
     } else {
-        document.getElementById('type-input').value = '';
-        document.getElementById('type-result').innerText = '';
+        document.getElementById('type-input').value='';
+        document.getElementById('type-result').innerText='';
         document.getElementById('next-type').classList.add('hidden');
-        setTimeout(() => document.getElementById('type-input').focus(), 100);
+        setTimeout(()=>document.getElementById('type-input').focus(),100);
     }
 }
 
 function updateCount() {
-    let pct = score.total > 0 ? Math.round(score.correct / score.total * 100) : 0;
-    document.getElementById('count').innerText = `📚 Осталось: ${deck.length} · ${score.correct}/${score.total} (${pct}%)`;
-    document.getElementById('score-fill').style.width = pct + '%';
+    let pct = score.total>0 ? Math.round(score.correct/score.total*100) : 0;
+    document.getElementById('count').innerText = `📚 Ответов: ${score.total} · Верно: ${score.correct} (${pct}%)`;
+    document.getElementById('score-fill').style.width = pct+'%';
 }
 
-// ===================== РЕЗУЛЬТАТЫ =====================
-function showResults() {
+// ====== ИТОГ ======
+function showRoundSummary() {
     document.getElementById('quiz-card').classList.add('hidden');
     document.getElementById('results-screen').classList.remove('hidden');
     ensureLevels();
-
-    let pct = score.total > 0 ? Math.round(score.correct / score.total * 100) : 0;
-    let emoji = pct >= 80 ? '🎉' : pct >= 50 ? '💪' : '😅';
-
-    // Слова которые ещё слабые
-    let weak = myWords.filter(w => (w.level || 0) <= 1).length;
-    let strong = myWords.filter(w => (w.level || 0) >= 4).length;
-
+    let pct = Math.round(score.correct/score.total*100);
+    let emoji = pct>=80?'🎉':pct>=50?'💪':'😅';
+    let counts = [0,0,0,0,0,0];
+    myWords.forEach(w => counts[Math.min(w.level||0,5)]++);
     document.getElementById('results-body').innerHTML = `
-        <div style="font-size:56px;margin:8px 0;">${emoji}</div>
+        <div style="font-size:48px;margin:8px 0;">${emoji}</div>
         <h2 style="margin:6px 0;">${score.correct} / ${score.total} верно · ${pct}%</h2>
-        <p style="color:gray;font-size:13px;">Раунд завершён</p>
-        <div style="background:#f8f9fa;border-radius:10px;padding:14px;margin:14px 0;text-align:left;font-size:14px;">
-            <b>Твой прогресс:</b><br><br>
-            🔴🟠 Слабые слова: <b>${weak}</b> — попадаются часто<br>
-            🟢💙⭐ Сильные слова: <b>${strong}</b> — попадаются редко
+        <p style="color:gray;font-size:13px;">Прогресс слов:</p>
+        <div style="background:#f8f9fa;border-radius:10px;padding:14px;margin:10px 0;text-align:left;font-size:14px;line-height:2;">
+            🔴 Новые / сложные: <b>${counts[0]+counts[1]}</b><br>
+            🟡 В процессе: <b>${counts[2]}</b><br>
+            🟢💙⭐ Знаю хорошо: <b>${counts[3]+counts[4]+counts[5]}</b>
         </div>
-        <button class="res-btn" style="background:#007bff;color:white;" onclick="startFresh()">▶ Новый раунд</button>
+        <button class="res-btn" style="background:#007bff;color:white;" onclick="continueFresh()">▶ Продолжить</button>
     `;
 }
 
-// ===================== КАРТОЧКИ =====================
-function showAns() { document.getElementById('qr').classList.remove('hidden'); answerShown = true; }
+function continueFresh() {
+    score = { correct:0, total:0 };
+    document.getElementById('results-screen').classList.add('hidden');
+    document.getElementById('quiz-card').classList.remove('hidden');
+    next();
+}
+
+// ====== КАРТОЧКИ ======
+function showAns() { document.getElementById('qr').classList.remove('hidden'); answerShown=true; }
 function markCard(knew) {
     if (!answerShown) { showAns(); return; }
     score.total++;
     if (knew) score.correct++;
     updateLevel(current.en, knew);
+    // Сразу обновляем лейбл уровня
+    let newLvl = Math.min(myWords.find(w=>w.en===current.en)?.level||0, 5);
+    document.getElementById('word-level').innerText = LEVEL_LABELS[newLvl];
+    document.getElementById('word-level').style.color = LEVEL_COLORS[newLvl];
     next();
 }
 
-// ===================== ВЫБОР =====================
+// ====== ВЫБОР ======
 function buildOptions() {
     let correct = current.ru;
-    let pool = myWords.map(w => ({ en: w.en, ru: w.ru }));
-    let wrong = pool.filter(w => w.en !== current.en).sort(() => Math.random()-0.5).slice(0,3).map(w => w.ru);
-    let opts = [...wrong, correct].sort(() => Math.random()-0.5);
+    let wrong = myWords.filter(w=>w.en!==current.en).sort(()=>Math.random()-0.5).slice(0,3).map(w=>w.ru);
+    let opts = [...wrong, correct].sort(()=>Math.random()-0.5);
     let d = document.getElementById('options');
-    d.innerHTML = '';
+    d.innerHTML='';
     opts.forEach(o => {
         let btn = document.createElement('button');
-        btn.className = 'opt-btn'; btn.innerText = o;
-        btn.onclick = () => checkOption(o, correct);
+        btn.className='opt-btn'; btn.innerText=o;
+        btn.onclick=()=>checkOption(o,correct);
         d.appendChild(btn);
     });
 }
 function checkOption(chosen, correct) {
-    let knew = chosen === correct;
+    let knew = chosen===correct;
     score.total++;
     if (knew) score.correct++;
     document.querySelectorAll('.opt-btn').forEach(b => {
-        b.onclick = null;
-        if (b.innerText === correct) b.className = 'opt-btn correct';
-        else if (b.innerText === chosen && !knew) b.className = 'opt-btn wrong';
+        b.onclick=null;
+        if (b.innerText===correct) b.className='opt-btn correct';
+        else if (b.innerText===chosen && !knew) b.className='opt-btn wrong';
     });
     updateLevel(current.en, knew);
     updateCount();
     document.getElementById('next-choice').classList.remove('hidden');
 }
 
-// ===================== ПИСЬМО =====================
+// ====== ПИСЬМО ======
 function checkType() {
     let inp = document.getElementById('type-input').value.trim().toLowerCase();
     if (!inp) return;
-    let variants = current.ru.toLowerCase().split('/').map(v => v.trim());
-    let ok = variants.some(v => v === inp);
+    let variants = current.ru.toLowerCase().split('/').map(v=>v.trim());
+    let ok = variants.some(v=>v===inp);
     score.total++;
-    if (ok) {
-        score.correct++;
-        document.getElementById('type-result').innerHTML = `<span style="color:#28a745">✓ Верно!</span>`;
-    } else {
-        document.getElementById('type-result').innerHTML = `<span style="color:#dc3545">✗ Правильно: <b>${current.ru}</b></span>`;
-    }
+    if (ok) { score.correct++; document.getElementById('type-result').innerHTML=`<span style="color:#28a745">✓ Верно!</span>`; }
+    else { document.getElementById('type-result').innerHTML=`<span style="color:#dc3545">✗ Правильно: <b>${current.ru}</b></span>`; }
     updateLevel(current.en, ok);
     updateCount();
     document.getElementById('next-type').classList.remove('hidden');
 }
-document.getElementById('type-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
+document.getElementById('type-input').addEventListener('keydown', e=>{
+    if (e.key==='Enter') {
         if (!document.getElementById('next-type').classList.contains('hidden')) next();
         else checkType();
     }
