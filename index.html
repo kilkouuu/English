@@ -7,36 +7,41 @@
     <style>
         * { box-sizing: border-box; }
         body { font-family: sans-serif; max-width: 500px; margin: auto; padding: 16px; background: #f0f2f5; }
-        nav { display: flex; gap: 10px; margin-bottom: 20px; }
-        nav button { cursor: pointer; padding: 12px; border: none; border-radius: 8px; flex: 1; font-weight: bold; font-size: 15px; background: #eee; color: #333; }
+        nav { display: flex; gap: 8px; margin-bottom: 20px; }
+        nav button { cursor: pointer; padding: 11px 6px; border: none; border-radius: 8px; flex: 1; font-weight: bold; font-size: 13px; background: #eee; color: #333; }
         nav button.active { background: #007bff; color: white; }
         .hidden { display: none; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         input { padding: 12px; border: 1px solid #ddd; width: 100%; margin-bottom: 10px; border-radius: 6px; font-size: 16px; }
         .word-item { background: white; padding: 10px 14px; margin-top: 10px; border-radius: 8px; display: flex; justify-content: space-between; border-left: 4px solid #007bff; align-items: center; }
         .stats { font-size: 12px; color: gray; margin: 8px 0; }
-        #quiz-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
-        #quiz-tabs button { cursor: pointer; font-size: 12px; padding: 9px 6px; background: #eee; color: #333; border: none; border-radius: 8px; font-weight: bold; line-height: 1.3; }
-        #quiz-tabs button.active { background: #007bff; color: white; }
+        .mode-tabs { display: grid; gap: 8px; margin-bottom: 14px; }
+        .mode-tabs.cols2 { grid-template-columns: 1fr 1fr; }
+        .mode-tabs.cols4 { grid-template-columns: 1fr 1fr; }
+        .mode-tabs button { cursor: pointer; font-size: 12px; padding: 9px 6px; background: #eee; color: #333; border: none; border-radius: 8px; font-weight: bold; line-height: 1.4; }
+        .mode-tabs button.active { background: #007bff; color: white; }
         #score-bar { height: 6px; background: #eee; border-radius: 3px; margin: 8px 0 14px; overflow: hidden; }
-        #score-fill { height: 100%; background: #28a745; width: 0%; transition: width 0.4s; border-radius: 3px; }
+        #score-fill, #score-fill2 { height: 100%; background: #28a745; width: 0%; transition: width 0.4s; border-radius: 3px; }
+        #score-bar2 { height: 6px; background: #eee; border-radius: 3px; margin: 8px 0 14px; overflow: hidden; }
         .q-btn { cursor: pointer; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; padding: 12px; width: 100%; margin-top: 8px; }
         .res-btn { cursor: pointer; width: 100%; padding: 14px; font-size: 15px; border-radius: 10px; border: none; font-weight: bold; margin-top: 10px; }
         .level-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
         textarea.export-area { width: 100%; height: 100px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; font-family: monospace; resize: none; background: white; }
-        .question-label { font-size: 12px; color: #aaa; margin: 0 0 6px; }
-        .question-word { font-size: 30px; font-weight: bold; margin: 6px 0 14px; }
-        .answer-word { color: #28a745; font-size: 22px; font-weight: bold; margin: 0 0 14px; }
+        .q-label { font-size: 12px; color: #aaa; margin: 0 0 6px; }
+        .q-word { font-size: 30px; font-weight: bold; margin: 6px 0 14px; line-height: 1.2; }
+        .a-word { color: #28a745; font-size: 22px; font-weight: bold; margin: 0 0 14px; }
+        .empty-msg { text-align:center; color:#aaa; padding:30px 0; font-size:15px; }
     </style>
 </head>
 <body>
 
 <nav>
-    <button id="b1" class="active" onclick="tab('add')">📖 Словарь</button>
-    <button id="b2" onclick="tab('quiz')">🎯 Тренировка</button>
+    <button id="nb1" class="active" onclick="tab('add')">📖 Словарь</button>
+    <button id="nb2" onclick="tab('quiz')">💪 Тренировка</button>
+    <button id="nb3" onclick="tab('review')">🔄 Повторение</button>
 </nav>
 
-<!-- СЛОВАРЬ -->
+<!-- ========== СЛОВАРЬ ========== -->
 <div id="add">
     <div class="card">
         <input type="text" id="e" placeholder="English...">
@@ -63,85 +68,128 @@
     <button onclick="clearAll()" style="margin-top:14px;background:none;color:gray;font-size:11px;border:1px solid #ccc;border-radius:6px;padding:8px;width:100%;cursor:pointer;">Очистить все слова</button>
 </div>
 
-<!-- ТРЕНИРОВКА -->
+<!-- ========== ТРЕНИРОВКА (слабые слова) ========== -->
 <div id="quiz" class="hidden">
-    <!-- 4 вкладки 2x2 -->
-    <div id="quiz-tabs">
-        <button id="qt1" class="active"  onclick="setMode('flash-en')">👁 EN → RU<br><span style="font-weight:normal;font-size:11px;">знаю / не знаю</span></button>
-        <button id="qt2"                 onclick="setMode('type-en')">✍️ EN → RU<br><span style="font-weight:normal;font-size:11px;">написать перевод</span></button>
-        <button id="qt3"                 onclick="setMode('flash-ru')">👁 RU → EN<br><span style="font-weight:normal;font-size:11px;">знаю / не знаю</span></button>
-        <button id="qt4"                 onclick="setMode('type-ru')">✍️ RU → EN<br><span style="font-weight:normal;font-size:11px;">написать по-английски</span></button>
+    <div class="mode-tabs cols4">
+        <button id="qt1" class="active" onclick="setQuizMode('flash-en')">👁 EN→RU<br><span style="font-weight:normal;font-size:11px;">знаю/не знаю</span></button>
+        <button id="qt2"               onclick="setQuizMode('type-en')">✍️ EN→RU<br><span style="font-weight:normal;font-size:11px;">написать</span></button>
+        <button id="qt3"               onclick="setQuizMode('flash-ru')">👁 RU→EN<br><span style="font-weight:normal;font-size:11px;">знаю/не знаю</span></button>
+        <button id="qt4"               onclick="setQuizMode('type-ru')">✍️ RU→EN<br><span style="font-weight:normal;font-size:11px;">написать</span></button>
+    </div>
+
+    <div id="quiz-empty" class="hidden card">
+        <div class="empty-msg">🎉 Слабых слов нет!<br><span style="font-size:13px;">Все слова уже на уровне 🟢+<br>Иди в «Повторение»</span></div>
     </div>
 
     <div id="quiz-card" class="card" style="text-align:center;">
-        <div id="count" class="stats"></div>
+        <div id="q-count" class="stats"></div>
         <div id="score-bar"><div id="score-fill"></div></div>
-        <div id="word-level" style="font-size:12px;margin-bottom:4px;"></div>
+        <div id="q-level" style="font-size:12px;margin-bottom:4px;"></div>
+        <p id="q-label" class="q-label"></p>
+        <div id="q-word" class="q-word"></div>
 
-        <!-- Общий вопрос -->
-        <p id="q-label" class="question-label"></p>
-        <div id="q-word" class="question-word"></div>
-
-        <!-- Режим: знаю/не знаю -->
-        <div id="mode-flash">
-            <div id="a-word" class="answer-word hidden"></div>
-            <button class="q-btn" onclick="showAns()" style="background:#eee;color:#333;">👁 Показать ответ</button>
+        <div id="qmode-flash">
+            <div id="q-answer" class="a-word hidden"></div>
+            <button class="q-btn" onclick="showAns('q')" style="background:#eee;color:#333;">👁 Показать ответ</button>
             <div style="display:flex;gap:8px;margin-top:8px;">
-                <button class="q-btn" onclick="markCard(false)" style="background:#f8d7da;color:#721c24;flex:1;">✗ Не знал</button>
-                <button class="q-btn" onclick="markCard(true)"  style="background:#d4edda;color:#155724;flex:1;">✓ Знал</button>
+                <button class="q-btn" onclick="markQ(false)" style="background:#f8d7da;color:#721c24;flex:1;">✗ Не знал</button>
+                <button class="q-btn" onclick="markQ(true)"  style="background:#d4edda;color:#155724;flex:1;">✓ Знал</button>
             </div>
         </div>
 
-        <!-- Режим: написать -->
-        <div id="mode-type" class="hidden">
-            <input type="text" id="type-input" placeholder="Введи ответ..." style="text-align:center;font-size:18px;">
-            <button class="q-btn" onclick="checkType()" style="background:#007bff;color:white;">Проверить</button>
-            <div id="type-result" style="font-size:15px;margin:10px 0;min-height:22px;"></div>
-            <button id="next-type" class="q-btn hidden" onclick="next()" style="background:#555;color:white;">Дальше →</button>
+        <div id="qmode-type" class="hidden">
+            <input type="text" id="q-type-input" placeholder="Введи ответ..." style="text-align:center;font-size:18px;">
+            <button class="q-btn" onclick="checkQType()" style="background:#007bff;color:white;">Проверить</button>
+            <div id="q-type-result" style="font-size:15px;margin:10px 0;min-height:22px;"></div>
+            <button id="q-next-type" class="q-btn hidden" onclick="nextQ()" style="background:#555;color:white;">Дальше →</button>
         </div>
     </div>
 
-    <div id="results-screen" class="hidden card" style="text-align:center;">
-        <div id="results-body"></div>
+    <div id="quiz-results" class="hidden card" style="text-align:center;">
+        <div id="quiz-results-body"></div>
+    </div>
+</div>
+
+<!-- ========== ПОВТОРЕНИЕ (сильные слова) ========== -->
+<div id="review" class="hidden">
+    <div class="mode-tabs cols2">
+        <button id="rt1" class="active" onclick="setReviewMode('flash-en')">👁 EN → RU<br><span style="font-weight:normal;font-size:11px;">знаю/не знаю</span></button>
+        <button id="rt2"               onclick="setReviewMode('flash-ru')">👁 RU → EN<br><span style="font-weight:normal;font-size:11px;">знаю/не знаю</span></button>
+    </div>
+
+    <div id="review-empty" class="hidden card">
+        <div class="empty-msg">📚 Нет слов для повторения<br><span style="font-size:13px;">Сначала выучи слова в «Тренировке»<br>до уровня 🟢 и выше</span></div>
+    </div>
+
+    <div id="review-card" class="card" style="text-align:center;">
+        <div id="r-count" class="stats"></div>
+        <div id="score-bar2"><div id="score-fill2"></div></div>
+        <div id="r-level" style="font-size:12px;margin-bottom:4px;"></div>
+        <p id="r-label" class="q-label"></p>
+        <div id="r-word" class="q-word"></div>
+        <div id="r-answer" class="a-word hidden"></div>
+        <button class="q-btn" onclick="showAns('r')" style="background:#eee;color:#333;">👁 Показать ответ</button>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+            <button class="q-btn" onclick="markR(false)" style="background:#f8d7da;color:#721c24;flex:1;">✗ Не знал</button>
+            <button class="q-btn" onclick="markR(true)"  style="background:#d4edda;color:#155724;flex:1;">✓ Знал</button>
+        </div>
+    </div>
+
+    <div id="review-results" class="hidden card" style="text-align:center;">
+        <div id="review-results-body"></div>
     </div>
 </div>
 
 <script>
 const LEVEL_LABELS = ['🔴 Новое','🟠 Сложное','🟡 Учу','🟢 Знаю','💙 Хорошо','⭐ Отлично'];
 const LEVEL_COLORS = ['#dc3545','#fd7e14','#ffc107','#28a745','#007bff','#6f42c1'];
-const COOLDOWN    = [0, 2, 5, 11, 24, 49];
-const W           = [100, 40, 15, 5, 2, 1];
+const COOLDOWN     = [0, 2, 5, 11, 24, 49];
+const W            = [100, 40, 15, 5, 2, 1];
+
+// Порог: слова с level >= REVIEW_THRESHOLD идут в Повторение
+const REVIEW_THRESHOLD = 3;
 
 let myWords = JSON.parse(localStorage.getItem('myWords')) || [];
-let quizMode = 'flash-en';  // flash-en | type-en | flash-ru | type-ru
-let score = { correct: 0, total: 0 };
-let answerShown = false;
-let recentlyShown = [];
-let current = null;
+
+// Состояние тренировки
+let quizMode = 'flash-en';
+let qScore = { correct:0, total:0 };
+let qRecent = [];
+let qCurrent = null;
+let qAnswerShown = false;
+
+// Состояние повторения
+let reviewMode = 'flash-en';
+let rScore = { correct:0, total:0 };
+let rRecent = [];
+let rCurrent = null;
+let rAnswerShown = false;
 
 function ensureLevels() {
     myWords.forEach(w => { if (w.level === undefined) w.level = 0; });
 }
 
+function weakWords()   { return myWords.filter(w => (w.level||0) < REVIEW_THRESHOLD); }
+function strongWords() { return myWords.filter(w => (w.level||0) >= REVIEW_THRESHOLD); }
+
 // ====== АЛГОРИТМ ======
-function pickNext() {
-    ensureLevels();
-    if (!myWords.length) return null;
-    let available = myWords.filter(w => {
-        let lastIdx = recentlyShown.lastIndexOf(w.en);
+function pickFrom(pool, recentArr) {
+    if (!pool.length) return null;
+    let available = pool.filter(w => {
+        let lastIdx = recentArr.lastIndexOf(w.en);
         if (lastIdx === -1) return true;
-        return (recentlyShown.length - lastIdx) > COOLDOWN[Math.min(w.level, 5)];
+        return (recentArr.length - lastIdx) > COOLDOWN[Math.min(w.level,5)];
     });
     if (!available.length) {
-        available = [...myWords].sort((a,b) => recentlyShown.lastIndexOf(a.en) - recentlyShown.lastIndexOf(b.en));
+        available = [...pool].sort((a,b) => recentArr.lastIndexOf(a.en) - recentArr.lastIndexOf(b.en));
         available = [available[0]];
     }
     let total = available.reduce((s,w) => s + W[Math.min(w.level,5)], 0);
     let rand = Math.random() * total;
     let chosen = available[0];
     for (let w of available) { rand -= W[Math.min(w.level,5)]; if (rand <= 0) { chosen = w; break; } }
-    recentlyShown.push(chosen.en);
-    if (recentlyShown.length > 60) recentlyShown.shift();
+    recentArr.push(chosen.en);
+    if (recentArr.length > 60) recentArr.shift();
     return { en: chosen.en, ru: chosen.ru, level: chosen.level };
 }
 
@@ -200,7 +248,11 @@ function render() {
     let filtered = myWords.filter(w => !q || w.en.toLowerCase().includes(q) || w.ru.toLowerCase().includes(q));
     let counts = [0,0,0,0,0,0];
     myWords.forEach(w => counts[Math.min(w.level||0,5)]++);
-    d.innerHTML = `<div class="stats">Слов: ${myWords.length} &nbsp;·&nbsp; 🔴${counts[0]} 🟠${counts[1]} 🟡${counts[2]} 🟢${counts[3]} 💙${counts[4]} ⭐${counts[5]}</div>`;
+    d.innerHTML = `<div class="stats">
+        Слов: ${myWords.length} &nbsp;·&nbsp;
+        💪 Учу: ${counts[0]+counts[1]+counts[2]} &nbsp;·&nbsp;
+        🔄 Знаю: ${counts[3]+counts[4]+counts[5]}
+    </div>`;
     filtered.forEach((w,i) => {
         let lvl = Math.min(w.level||0,5);
         d.innerHTML += `<div class="word-item">
@@ -212,148 +264,227 @@ function render() {
 function delWord(i) { myWords.splice(i,1); save(); render(); }
 function clearAll() { if(confirm("Удалить все?")) { myWords=[]; save(); render(); } }
 
-// ====== ВКЛАДКИ ======
+// ====== ГЛАВНЫЕ ВКЛАДКИ ======
 function tab(t) {
-    document.getElementById('add').className  = t==='add'  ? '' : 'hidden';
-    document.getElementById('quiz').className = t==='quiz' ? '' : 'hidden';
-    document.getElementById('b1').className   = t==='add'  ? 'active' : '';
-    document.getElementById('b2').className   = t==='quiz' ? 'active' : '';
-    if (t==='quiz') startFresh();
+    ['add','quiz','review'].forEach(x => document.getElementById(x).className = x===t ? '' : 'hidden');
+    document.getElementById('nb1').className = t==='add'    ? 'active' : '';
+    document.getElementById('nb2').className = t==='quiz'   ? 'active' : '';
+    document.getElementById('nb3').className = t==='review' ? 'active' : '';
+    if (t==='quiz')   startQuiz();
+    if (t==='review') startReview();
 }
-function setMode(m) {
+
+// ====== ТРЕНИРОВКА ======
+function setQuizMode(m) {
     quizMode = m;
-    ['qt1','qt2','qt3','qt4'].forEach((id,i) => {
-        document.getElementById(id).className = (['flash-en','type-en','flash-ru','type-ru'][i]===m) ? 'active' : '';
+    ['flash-en','type-en','flash-ru','type-ru'].forEach((x,i) => {
+        document.getElementById('qt'+(i+1)).className = x===m ? 'active' : '';
     });
-    startFresh();
+    startQuiz();
 }
 
-// ====== РАУНД ======
-function startFresh() {
-    score = { correct:0, total:0 };
-    recentlyShown = [];
-    document.getElementById('results-screen').classList.add('hidden');
+function startQuiz() {
+    ensureLevels();
+    qScore = { correct:0, total:0 };
+    qRecent = [];
+    let pool = weakWords();
+    document.getElementById('quiz-results').classList.add('hidden');
+    if (!pool.length) {
+        document.getElementById('quiz-card').classList.add('hidden');
+        document.getElementById('quiz-empty').classList.remove('hidden');
+        return;
+    }
+    document.getElementById('quiz-empty').classList.add('hidden');
     document.getElementById('quiz-card').classList.remove('hidden');
-    next();
+    nextQ();
 }
 
-function next() {
-    if (!myWords.length) { alert("Добавь слова!"); return; }
-    if (score.total > 0 && score.total % 20 === 0) { showSummary(); return; }
+function nextQ() {
+    let pool = weakWords();
+    if (!pool.length) {
+        document.getElementById('quiz-card').classList.add('hidden');
+        document.getElementById('quiz-empty').classList.remove('hidden');
+        return;
+    }
+    if (qScore.total > 0 && qScore.total % 20 === 0) { showQuizSummary(); return; }
 
-    current = pickNext();
-    if (!current) return;
-    answerShown = false;
+    qCurrent = pickFrom(pool, qRecent);
+    if (!qCurrent) return;
+    qAnswerShown = false;
 
-    // Уровень
-    let lvl = Math.min(current.level||0, 5);
-    document.getElementById('word-level').innerText = LEVEL_LABELS[lvl];
-    document.getElementById('word-level').style.color = LEVEL_COLORS[lvl];
+    let lvl = Math.min(qCurrent.level||0, 5);
+    document.getElementById('q-level').innerText = LEVEL_LABELS[lvl];
+    document.getElementById('q-level').style.color = LEVEL_COLORS[lvl];
 
-    // Определяем что показывать как вопрос и что как ответ
-    let isRU = quizMode === 'flash-ru' || quizMode === 'type-ru';
-    let qText = isRU ? current.ru : current.en;
-    let qLabel = isRU ? '🇷🇺 Переведи на английский:' : '🇬🇧 Переведи на русский:';
+    let isRU = quizMode==='flash-ru' || quizMode==='type-ru';
+    document.getElementById('q-label').innerText = isRU ? '🇷🇺 Переведи на английский:' : '🇬🇧 Переведи на русский:';
+    document.getElementById('q-word').innerText   = isRU ? qCurrent.ru : qCurrent.en;
 
-    document.getElementById('q-label').innerText = qLabel;
-    document.getElementById('q-word').innerText = qText;
-    updateCount();
-
-    let isFlash = quizMode === 'flash-en' || quizMode === 'flash-ru';
-    let aText = isRU ? current.en : current.ru;
+    let isFlash = quizMode==='flash-en' || quizMode==='flash-ru';
+    document.getElementById('qmode-flash').classList.toggle('hidden', !isFlash);
+    document.getElementById('qmode-type').classList.toggle('hidden', isFlash);
 
     if (isFlash) {
-        document.getElementById('mode-flash').classList.remove('hidden');
-        document.getElementById('mode-type').classList.add('hidden');
-        document.getElementById('a-word').innerText = aText;
-        document.getElementById('a-word').classList.add('hidden');
+        document.getElementById('q-answer').innerText = isRU ? qCurrent.en : qCurrent.ru;
+        document.getElementById('q-answer').classList.add('hidden');
     } else {
-        document.getElementById('mode-flash').classList.add('hidden');
-        document.getElementById('mode-type').classList.remove('hidden');
-        document.getElementById('type-input').value='';
-        document.getElementById('type-result').innerText='';
-        document.getElementById('next-type').classList.add('hidden');
-        let placeholder = isRU ? 'Введи по-английски...' : 'Введи перевод...';
-        document.getElementById('type-input').placeholder = placeholder;
-        setTimeout(()=>document.getElementById('type-input').focus(),100);
+        document.getElementById('q-type-input').value='';
+        document.getElementById('q-type-result').innerText='';
+        document.getElementById('q-next-type').classList.add('hidden');
+        document.getElementById('q-type-input').placeholder = isRU ? 'Введи по-английски...' : 'Введи перевод...';
+        setTimeout(()=>document.getElementById('q-type-input').focus(),100);
     }
+    updateQCount();
 }
 
-function updateCount() {
-    let pct = score.total>0 ? Math.round(score.correct/score.total*100) : 0;
-    document.getElementById('count').innerText = `📚 Ответов: ${score.total} · Верно: ${score.correct} (${pct}%)`;
+function updateQCount() {
+    let pct = qScore.total>0 ? Math.round(qScore.correct/qScore.total*100) : 0;
+    document.getElementById('q-count').innerText = `💪 Слабых слов: ${weakWords().length} · Верно: ${qScore.correct}/${qScore.total} (${pct}%)`;
     document.getElementById('score-fill').style.width = pct+'%';
 }
 
-// ====== КАРТОЧКИ: знаю/не знаю ======
-function showAns() {
-    document.getElementById('a-word').classList.remove('hidden');
-    answerShown = true;
-}
-function markCard(knew) {
-    if (!answerShown) { showAns(); return; }
-    score.total++;
-    if (knew) score.correct++;
-    updateLevel(current.en, knew);
-    let newLvl = Math.min(myWords.find(w=>w.en===current.en)?.level||0, 5);
-    document.getElementById('word-level').innerText = LEVEL_LABELS[newLvl];
-    document.getElementById('word-level').style.color = LEVEL_COLORS[newLvl];
-    next();
+function showAns(section) {
+    if (section==='q') { document.getElementById('q-answer').classList.remove('hidden'); qAnswerShown=true; }
+    else               { document.getElementById('r-answer').classList.remove('hidden'); rAnswerShown=true; }
 }
 
-// ====== ПИСЬМО ======
-function checkType() {
-    let inp = document.getElementById('type-input').value.trim().toLowerCase();
-    if (!inp) return;
-    let isRU = quizMode === 'type-ru';
-    // Правильный ответ зависит от направления
-    let correct = isRU ? current.en.toLowerCase() : current.ru.toLowerCase();
-    let variants = correct.split('/').map(v=>v.trim());
-    let ok = variants.some(v=>v===inp);
-    score.total++;
-    if (ok) {
-        score.correct++;
-        document.getElementById('type-result').innerHTML=`<span style="color:#28a745">✓ Верно!</span>`;
-    } else {
-        let show = isRU ? current.en : current.ru;
-        document.getElementById('type-result').innerHTML=`<span style="color:#dc3545">✗ Правильно: <b>${show}</b></span>`;
-    }
-    updateLevel(current.en, ok);
-    updateCount();
-    document.getElementById('next-type').classList.remove('hidden');
+function markQ(knew) {
+    if (!qAnswerShown) { showAns('q'); return; }
+    qScore.total++;
+    if (knew) qScore.correct++;
+    updateLevel(qCurrent.en, knew);
+    updateQCount();
+    nextQ();
 }
-document.getElementById('type-input').addEventListener('keydown', e=>{
+
+function checkQType() {
+    let inp = document.getElementById('q-type-input').value.trim().toLowerCase();
+    if (!inp) return;
+    let isRU = quizMode==='type-ru';
+    let correct = isRU ? qCurrent.en.toLowerCase() : qCurrent.ru.toLowerCase();
+    let ok = correct.split('/').map(v=>v.trim()).some(v=>v===inp);
+    qScore.total++;
+    if (ok) { qScore.correct++; document.getElementById('q-type-result').innerHTML=`<span style="color:#28a745">✓ Верно!</span>`; }
+    else { document.getElementById('q-type-result').innerHTML=`<span style="color:#dc3545">✗ Правильно: <b>${isRU?qCurrent.en:qCurrent.ru}</b></span>`; }
+    updateLevel(qCurrent.en, ok);
+    updateQCount();
+    document.getElementById('q-next-type').classList.remove('hidden');
+}
+document.getElementById('q-type-input').addEventListener('keydown', e=>{
     if (e.key==='Enter') {
-        if (!document.getElementById('next-type').classList.contains('hidden')) next();
-        else checkType();
+        if (!document.getElementById('q-next-type').classList.contains('hidden')) nextQ();
+        else checkQType();
     }
 });
 
-// ====== ИТОГ ======
-function showSummary() {
+function showQuizSummary() {
     document.getElementById('quiz-card').classList.add('hidden');
-    document.getElementById('results-screen').classList.remove('hidden');
-    ensureLevels();
-    let pct = Math.round(score.correct/score.total*100);
+    document.getElementById('quiz-results').classList.remove('hidden');
+    let pct = Math.round(qScore.correct/qScore.total*100);
     let emoji = pct>=80?'🎉':pct>=50?'💪':'😅';
-    let counts = [0,0,0,0,0,0];
-    myWords.forEach(w=>counts[Math.min(w.level||0,5)]++);
-    document.getElementById('results-body').innerHTML = `
+    let weak = weakWords().length, strong = strongWords().length;
+    document.getElementById('quiz-results-body').innerHTML = `
         <div style="font-size:48px;margin:8px 0;">${emoji}</div>
-        <h2 style="margin:6px 0;">${score.correct} / ${score.total} верно · ${pct}%</h2>
+        <h2 style="margin:6px 0;">${qScore.correct}/${qScore.total} верно · ${pct}%</h2>
         <div style="background:#f8f9fa;border-radius:10px;padding:14px;margin:12px 0;text-align:left;font-size:14px;line-height:2;">
-            🔴🟠 Слабые: <b>${counts[0]+counts[1]}</b> — попадаются часто<br>
-            🟡 В процессе: <b>${counts[2]}</b><br>
-            🟢💙⭐ Сильные: <b>${counts[3]+counts[4]+counts[5]}</b> — попадаются редко
+            💪 Ещё учу: <b>${weak}</b><br>
+            🔄 Готовы к повторению: <b>${strong}</b>
         </div>
-        <button class="res-btn" style="background:#007bff;color:white;" onclick="continueFresh()">▶ Продолжить</button>
+        <button class="res-btn" style="background:#007bff;color:white;" onclick="continueQuiz()">▶ Продолжить</button>
     `;
 }
-function continueFresh() {
-    score = { correct:0, total:0 };
-    document.getElementById('results-screen').classList.add('hidden');
+function continueQuiz() {
+    qScore = { correct:0, total:0 };
+    document.getElementById('quiz-results').classList.add('hidden');
     document.getElementById('quiz-card').classList.remove('hidden');
-    next();
+    nextQ();
+}
+
+// ====== ПОВТОРЕНИЕ ======
+function setReviewMode(m) {
+    reviewMode = m;
+    document.getElementById('rt1').className = m==='flash-en' ? 'active' : '';
+    document.getElementById('rt2').className = m==='flash-ru' ? 'active' : '';
+    startReview();
+}
+
+function startReview() {
+    ensureLevels();
+    rScore = { correct:0, total:0 };
+    rRecent = [];
+    let pool = strongWords();
+    document.getElementById('review-results').classList.add('hidden');
+    if (!pool.length) {
+        document.getElementById('review-card').classList.add('hidden');
+        document.getElementById('review-empty').classList.remove('hidden');
+        return;
+    }
+    document.getElementById('review-empty').classList.add('hidden');
+    document.getElementById('review-card').classList.remove('hidden');
+    nextR();
+}
+
+function nextR() {
+    let pool = strongWords();
+    if (!pool.length) {
+        document.getElementById('review-card').classList.add('hidden');
+        document.getElementById('review-empty').classList.remove('hidden');
+        return;
+    }
+    if (rScore.total > 0 && rScore.total % 20 === 0) { showReviewSummary(); return; }
+
+    rCurrent = pickFrom(pool, rRecent);
+    if (!rCurrent) return;
+    rAnswerShown = false;
+
+    let lvl = Math.min(rCurrent.level||0, 5);
+    document.getElementById('r-level').innerText = LEVEL_LABELS[lvl];
+    document.getElementById('r-level').style.color = LEVEL_COLORS[lvl];
+
+    let isRU = reviewMode==='flash-ru';
+    document.getElementById('r-label').innerText = isRU ? '🇷🇺 Переведи на английский:' : '🇬🇧 Переведи на русский:';
+    document.getElementById('r-word').innerText   = isRU ? rCurrent.ru : rCurrent.en;
+    document.getElementById('r-answer').innerText = isRU ? rCurrent.en : rCurrent.ru;
+    document.getElementById('r-answer').classList.add('hidden');
+    updateRCount();
+}
+
+function updateRCount() {
+    let pct = rScore.total>0 ? Math.round(rScore.correct/rScore.total*100) : 0;
+    document.getElementById('r-count').innerText = `🔄 Знаю хорошо: ${strongWords().length} · Верно: ${rScore.correct}/${rScore.total} (${pct}%)`;
+    document.getElementById('score-fill2').style.width = pct+'%';
+}
+
+function markR(knew) {
+    if (!rAnswerShown) { showAns('r'); return; }
+    rScore.total++;
+    if (knew) rScore.correct++;
+    updateLevel(rCurrent.en, knew);
+    // Если слово упало ниже порога — оно уйдёт обратно в тренировку автоматически
+    updateRCount();
+    nextR();
+}
+
+function showReviewSummary() {
+    document.getElementById('review-card').classList.add('hidden');
+    document.getElementById('review-results').classList.remove('hidden');
+    let pct = Math.round(rScore.correct/rScore.total*100);
+    let emoji = pct>=80?'🎉':pct>=50?'💪':'😅';
+    document.getElementById('review-results-body').innerHTML = `
+        <div style="font-size:48px;margin:8px 0;">${emoji}</div>
+        <h2 style="margin:6px 0;">${rScore.correct}/${rScore.total} верно · ${pct}%</h2>
+        <div style="background:#f8f9fa;border-radius:10px;padding:14px;margin:12px 0;text-align:left;font-size:14px;line-height:2;">
+            🔄 Слов на повторении: <b>${strongWords().length}</b><br>
+            💪 Слов в тренировке: <b>${weakWords().length}</b>
+        </div>
+        <button class="res-btn" style="background:#007bff;color:white;" onclick="continueReview()">▶ Продолжить</button>
+    `;
+}
+function continueReview() {
+    rScore = { correct:0, total:0 };
+    document.getElementById('review-results').classList.add('hidden');
+    document.getElementById('review-card').classList.remove('hidden');
+    nextR();
 }
 
 render();
