@@ -7,8 +7,8 @@
     <style>
         * { box-sizing: border-box; }
         body { font-family: sans-serif; max-width: 500px; margin: auto; padding: 16px; background: #f0f2f5; }
-        nav { display: flex; gap: 8px; margin-bottom: 20px; }
-        nav button { cursor: pointer; padding: 11px 6px; border: none; border-radius: 8px; flex: 1; font-weight: bold; font-size: 13px; background: #eee; color: #333; }
+        nav { display: flex; gap: 6px; margin-bottom: 20px; }
+        nav button { cursor: pointer; padding: 10px 4px; border: none; border-radius: 8px; flex: 1; font-weight: bold; font-size: 12px; background: #eee; color: #333; }
         nav button.active { background: #007bff; color: white; }
         .hidden { display: none; }
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -20,9 +20,8 @@
         .mode-tabs.cols4 { grid-template-columns: 1fr 1fr; }
         .mode-tabs button { cursor: pointer; font-size: 12px; padding: 9px 6px; background: #eee; color: #333; border: none; border-radius: 8px; font-weight: bold; line-height: 1.4; }
         .mode-tabs button.active { background: #007bff; color: white; }
-        #score-bar { height: 6px; background: #eee; border-radius: 3px; margin: 8px 0 14px; overflow: hidden; }
+        #score-bar, #score-bar2 { height: 6px; background: #eee; border-radius: 3px; margin: 8px 0 14px; overflow: hidden; }
         #score-fill, #score-fill2 { height: 100%; background: #28a745; width: 0%; transition: width 0.4s; border-radius: 3px; }
-        #score-bar2 { height: 6px; background: #eee; border-radius: 3px; margin: 8px 0 14px; overflow: hidden; }
         .q-btn { cursor: pointer; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; padding: 12px; width: 100%; margin-top: 8px; }
         .res-btn { cursor: pointer; width: 100%; padding: 14px; font-size: 15px; border-radius: 10px; border: none; font-weight: bold; margin-top: 10px; }
         .level-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
@@ -31,14 +30,148 @@
         .q-word { font-size: 30px; font-weight: bold; margin: 6px 0 14px; line-height: 1.2; }
         .a-word { color: #28a745; font-size: 22px; font-weight: bold; margin: 0 0 14px; }
         .empty-msg { text-align:center; color:#aaa; padding:30px 0; font-size:15px; }
+
+        /* ===== ЗАМЕТКИ ===== */
+        .notes-list { display: flex; flex-direction: column; gap: 12px; }
+
+        .note-card {
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow: hidden;
+            transition: box-shadow 0.2s;
+        }
+        .note-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.13); }
+
+        .note-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px 10px;
+            cursor: pointer;
+            gap: 8px;
+        }
+        .note-title-text {
+            font-weight: bold;
+            font-size: 15px;
+            flex: 1;
+            color: #222;
+        }
+        .note-tag {
+            font-size: 11px;
+            padding: 3px 9px;
+            border-radius: 20px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        .note-toggle { color: #aaa; font-size: 18px; padding: 0 4px; transition: transform 0.2s; }
+        .note-toggle.open { transform: rotate(180deg); }
+
+        .note-body {
+            padding: 0 14px 14px;
+            font-size: 14px;
+            line-height: 1.7;
+            color: #333;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        /* Форматирование внутри заметки */
+        .note-body h3 { font-size: 15px; color: #007bff; margin: 12px 0 6px; }
+        .note-body strong { color: #222; }
+        .note-body em { color: #555; }
+        .note-body code {
+            background: #f0f4ff;
+            color: #3a3aff;
+            padding: 2px 7px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        .note-body blockquote {
+            border-left: 3px solid #007bff;
+            margin: 8px 0;
+            padding: 6px 12px;
+            background: #f0f7ff;
+            border-radius: 0 8px 8px 0;
+            color: #555;
+            font-style: italic;
+        }
+        .note-body .example {
+            background: #f6fff6;
+            border-left: 3px solid #28a745;
+            padding: 6px 12px;
+            border-radius: 0 8px 8px 0;
+            margin: 6px 0;
+            font-size: 13px;
+        }
+        .note-body .warning {
+            background: #fffbf0;
+            border-left: 3px solid #ffc107;
+            padding: 6px 12px;
+            border-radius: 0 8px 8px 0;
+            margin: 6px 0;
+            font-size: 13px;
+        }
+        .note-body table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 13px; }
+        .note-body th { background: #f0f4ff; color: #007bff; padding: 6px 10px; text-align: left; }
+        .note-body td { padding: 6px 10px; border-bottom: 1px solid #f0f0f0; }
+        .note-body tr:last-child td { border-bottom: none; }
+
+        /* Редактор */
+        .note-editor { background: white; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden; margin-bottom: 14px; }
+        .editor-toolbar {
+            display: flex; flex-wrap: wrap; gap: 4px; padding: 10px 12px;
+            background: #f8f9fa; border-bottom: 1px solid #eee;
+        }
+        .toolbar-btn {
+            cursor: pointer; border: 1px solid #ddd; background: white;
+            border-radius: 6px; padding: 5px 9px; font-size: 13px;
+            color: #444; transition: all 0.15s; white-space: nowrap;
+        }
+        .toolbar-btn:hover { background: #007bff; color: white; border-color: #007bff; }
+        .toolbar-sep { width: 1px; background: #ddd; margin: 2px 2px; }
+        .editor-fields { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+        .editor-fields input { margin: 0; font-size: 15px; }
+        .tag-select {
+            padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px;
+            font-size: 14px; background: white; color: #333; width: 100%;
+        }
+        #note-textarea {
+            width: 100%; min-height: 160px; padding: 12px; border: 1px solid #ddd;
+            border-radius: 6px; font-size: 14px; font-family: sans-serif;
+            resize: vertical; line-height: 1.6;
+        }
+        .editor-actions { display: flex; gap: 8px; padding: 0 12px 12px; }
+        .notes-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .notes-header h3 { margin: 0; font-size: 16px; color: #333; }
+        .add-note-btn {
+            background: #007bff; color: white; border: none; border-radius: 8px;
+            padding: 8px 14px; font-size: 13px; font-weight: bold; cursor: pointer;
+        }
+
+        /* Теги */
+        .tag-grammar   { background: #e8f0fe; color: #1a73e8; }
+        .tag-vocab     { background: #e6f4ea; color: #1e8e3e; }
+        .tag-tenses    { background: #fce8e6; color: #d93025; }
+        .tag-phrases   { background: #fef7e0; color: #f09300; }
+        .tag-tips      { background: #f3e8fd; color: #9334e6; }
+        .tag-other     { background: #f1f3f4; color: #5f6368; }
+
+        .note-actions { display: flex; gap: 6px; }
+        .note-act-btn { background: none; border: none; cursor: pointer; font-size: 16px; padding: 2px 4px; color: #aaa; }
+        .note-act-btn:hover { color: #333; }
+
+        /* Поиск заметок */
+        .notes-search { margin-bottom: 12px; }
     </style>
 </head>
 <body>
 
 <nav>
     <button id="nb1" class="active" onclick="tab('add')">📖 Словарь</button>
-    <button id="nb2" onclick="tab('quiz')">💪 Тренировка</button>
-    <button id="nb3" onclick="tab('review')">🔄 Повторение</button>
+    <button id="nb2" onclick="tab('quiz')">💪 Учу</button>
+    <button id="nb3" onclick="tab('review')">🔄 Знаю</button>
+    <button id="nb4" onclick="tab('notes')">📝 Правила</button>
 </nav>
 
 <!-- ========== СЛОВАРЬ ========== -->
@@ -48,7 +181,6 @@
         <input type="text" id="r" placeholder="Перевод...">
         <button onclick="addWord()" style="background:#28a745;color:white;width:100%;border:none;border-radius:8px;padding:12px;font-size:15px;font-weight:bold;cursor:pointer;">Сохранить</button>
     </div>
-
     <div class="card" style="margin-top:14px;">
         <p style="font-size:13px;font-weight:bold;margin:0 0 10px;color:#555;">📤 Перенос слов между браузерами</p>
         <button onclick="exportWords()" style="background:#17a2b8;color:white;width:100%;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:bold;cursor:pointer;">📋 Скопировать мои слова</button>
@@ -62,41 +194,34 @@
         <button onclick="importWords()" style="background:#6f42c1;color:white;width:100%;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:bold;cursor:pointer;margin-top:6px;">📥 Загрузить слова</button>
         <div id="import-status" style="font-size:13px;text-align:center;margin-top:8px;min-height:18px;"></div>
     </div>
-
     <input type="text" id="search" placeholder="🔍 Поиск..." oninput="render()" style="margin-top:14px;">
     <div id="list"></div>
     <button onclick="clearAll()" style="margin-top:14px;background:none;color:gray;font-size:11px;border:1px solid #ccc;border-radius:6px;padding:8px;width:100%;cursor:pointer;">Очистить все слова</button>
 </div>
 
-<!-- ========== ТРЕНИРОВКА (слабые слова) ========== -->
+<!-- ========== ТРЕНИРОВКА ========== -->
 <div id="quiz" class="hidden">
     <div class="mode-tabs cols4">
         <button id="qt1" class="active" onclick="setQuizMode('flash-en')">👁 EN→RU<br><span style="font-weight:normal;font-size:11px;">знаю/не знаю</span></button>
-        <button id="qt2"               onclick="setQuizMode('type-en')">✍️ EN→RU<br><span style="font-weight:normal;font-size:11px;">написать</span></button>
-        <button id="qt3"               onclick="setQuizMode('flash-ru')">👁 RU→EN<br><span style="font-weight:normal;font-size:11px;">знаю/не знаю</span></button>
-        <button id="qt4"               onclick="setQuizMode('type-ru')">✍️ RU→EN<br><span style="font-weight:normal;font-size:11px;">написать</span></button>
+        <button id="qt2" onclick="setQuizMode('type-en')">✍️ EN→RU<br><span style="font-weight:normal;font-size:11px;">написать</span></button>
+        <button id="qt3" onclick="setQuizMode('flash-ru')">👁 RU→EN<br><span style="font-weight:normal;font-size:11px;">знаю/не знаю</span></button>
+        <button id="qt4" onclick="setQuizMode('type-ru')">✍️ RU→EN<br><span style="font-weight:normal;font-size:11px;">написать</span></button>
     </div>
-
-    <div id="quiz-empty" class="hidden card">
-        <div class="empty-msg">🎉 Слабых слов нет!<br><span style="font-size:13px;">Все слова уже на уровне 🟢+<br>Иди в «Повторение»</span></div>
-    </div>
-
+    <div id="quiz-empty" class="hidden card"><div class="empty-msg">🎉 Слабых слов нет!<br><span style="font-size:13px;">Все слова уже на уровне 🟢+<br>Иди в «Знаю»</span></div></div>
     <div id="quiz-card" class="card" style="text-align:center;">
         <div id="q-count" class="stats"></div>
         <div id="score-bar"><div id="score-fill"></div></div>
         <div id="q-level" style="font-size:12px;margin-bottom:4px;"></div>
         <p id="q-label" class="q-label"></p>
         <div id="q-word" class="q-word"></div>
-
         <div id="qmode-flash">
             <div id="q-answer" class="a-word hidden"></div>
             <button class="q-btn" onclick="showAns('q')" style="background:#eee;color:#333;">👁 Показать ответ</button>
             <div style="display:flex;gap:8px;margin-top:8px;">
                 <button class="q-btn" onclick="markQ(false)" style="background:#f8d7da;color:#721c24;flex:1;">✗ Не знал</button>
-                <button class="q-btn" onclick="markQ(true)"  style="background:#d4edda;color:#155724;flex:1;">✓ Знал</button>
+                <button class="q-btn" onclick="markQ(true)" style="background:#d4edda;color:#155724;flex:1;">✓ Знал</button>
             </div>
         </div>
-
         <div id="qmode-type" class="hidden">
             <input type="text" id="q-type-input" placeholder="Введи ответ..." style="text-align:center;font-size:18px;">
             <button class="q-btn" onclick="checkQType()" style="background:#007bff;color:white;">Проверить</button>
@@ -104,23 +229,16 @@
             <button id="q-next-type" class="q-btn hidden" onclick="nextQ()" style="background:#555;color:white;">Дальше →</button>
         </div>
     </div>
-
-    <div id="quiz-results" class="hidden card" style="text-align:center;">
-        <div id="quiz-results-body"></div>
-    </div>
+    <div id="quiz-results" class="hidden card" style="text-align:center;"><div id="quiz-results-body"></div></div>
 </div>
 
-<!-- ========== ПОВТОРЕНИЕ (сильные слова) ========== -->
+<!-- ========== ПОВТОРЕНИЕ ========== -->
 <div id="review" class="hidden">
     <div class="mode-tabs cols2">
         <button id="rt1" class="active" onclick="setReviewMode('flash-en')">👁 EN → RU<br><span style="font-weight:normal;font-size:11px;">знаю/не знаю</span></button>
-        <button id="rt2"               onclick="setReviewMode('flash-ru')">👁 RU → EN<br><span style="font-weight:normal;font-size:11px;">знаю/не знаю</span></button>
+        <button id="rt2" onclick="setReviewMode('flash-ru')">👁 RU → EN<br><span style="font-weight:normal;font-size:11px;">знаю/не знаю</span></button>
     </div>
-
-    <div id="review-empty" class="hidden card">
-        <div class="empty-msg">📚 Нет слов для повторения<br><span style="font-size:13px;">Сначала выучи слова в «Тренировке»<br>до уровня 🟢 и выше</span></div>
-    </div>
-
+    <div id="review-empty" class="hidden card"><div class="empty-msg">📚 Нет слов для повторения<br><span style="font-size:13px;">Сначала выучи слова в «Учу»<br>до уровня 🟢 и выше</span></div></div>
     <div id="review-card" class="card" style="text-align:center;">
         <div id="r-count" class="stats"></div>
         <div id="score-bar2"><div id="score-fill2"></div></div>
@@ -131,360 +249,474 @@
         <button class="q-btn" onclick="showAns('r')" style="background:#eee;color:#333;">👁 Показать ответ</button>
         <div style="display:flex;gap:8px;margin-top:8px;">
             <button class="q-btn" onclick="markR(false)" style="background:#f8d7da;color:#721c24;flex:1;">✗ Не знал</button>
-            <button class="q-btn" onclick="markR(true)"  style="background:#d4edda;color:#155724;flex:1;">✓ Знал</button>
+            <button class="q-btn" onclick="markR(true)" style="background:#d4edda;color:#155724;flex:1;">✓ Знал</button>
+        </div>
+    </div>
+    <div id="review-results" class="hidden card" style="text-align:center;"><div id="review-results-body"></div></div>
+</div>
+
+<!-- ========== ЗАМЕТКИ / ПРАВИЛА ========== -->
+<div id="notes" class="hidden">
+
+    <!-- Редактор (скрыт по умолчанию) -->
+    <div id="note-editor-wrap" class="hidden">
+        <div class="note-editor">
+            <div class="editor-toolbar">
+                <button class="toolbar-btn" onclick="ins('**','**')" title="Жирный">𝐁</button>
+                <button class="toolbar-btn" onclick="ins('_','_')" title="Курсив">𝑰</button>
+                <button class="toolbar-btn" onclick="ins('`','`')" title="Код">{ }</button>
+                <div class="toolbar-sep"></div>
+                <button class="toolbar-btn" onclick="insLine('### ')" title="Заголовок">H3</button>
+                <button class="toolbar-btn" onclick="insLine('> ')" title="Цитата">❝</button>
+                <div class="toolbar-sep"></div>
+                <button class="toolbar-btn" onclick="insBlock('[example]','[/example]')" title="Пример">✅ пример</button>
+                <button class="toolbar-btn" onclick="insBlock('[warn]','[/warn]')" title="Важно">⚠️ важно</button>
+                <div class="toolbar-sep"></div>
+                <button class="toolbar-btn" onclick="insTable()" title="Таблица">⊞ табл.</button>
+            </div>
+            <div class="editor-fields">
+                <input type="text" id="note-title" placeholder="Название правила...">
+                <select id="note-tag" class="tag-select">
+                    <option value="grammar">📘 Грамматика</option>
+                    <option value="tenses">⏰ Времена</option>
+                    <option value="vocab">📗 Лексика</option>
+                    <option value="phrases">💬 Фразы</option>
+                    <option value="tips">💡 Советы</option>
+                    <option value="other">📁 Другое</option>
+                </select>
+                <textarea id="note-textarea" placeholder="Текст правила...&#10;&#10;Подсказки по форматированию:&#10;**жирный** — жирный текст&#10;_курсив_ — курсивный текст&#10;`код` — выделение кодом&#10;### Заголовок&#10;> Цитата или важная фраза&#10;[example]Пример предложения[/example]&#10;[warn]Важное замечание[/warn]"></textarea>
+            </div>
+            <div class="editor-actions">
+                <button onclick="saveNote()" style="background:#007bff;color:white;flex:2;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:bold;cursor:pointer;">💾 Сохранить</button>
+                <button onclick="cancelNote()" style="background:#eee;color:#555;flex:1;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:bold;cursor:pointer;">Отмена</button>
+            </div>
         </div>
     </div>
 
-    <div id="review-results" class="hidden card" style="text-align:center;">
-        <div id="review-results-body"></div>
+    <!-- Список заметок -->
+    <div id="notes-list-wrap">
+        <div class="notes-header">
+            <h3>📝 Мои правила</h3>
+            <button class="add-note-btn" onclick="openNoteEditor()">+ Добавить</button>
+        </div>
+        <input type="text" class="notes-search" id="notes-search" placeholder="🔍 Поиск по правилам..." oninput="renderNotes()">
+        <div id="notes-list" class="notes-list"></div>
+        <div id="notes-empty" class="hidden" style="text-align:center;color:#aaa;padding:40px 0;font-size:15px;">
+            📝 Правил пока нет<br><span style="font-size:13px;">Нажми «+ Добавить» чтобы записать первое правило</span>
+        </div>
     </div>
 </div>
 
 <script>
+// ============================================================
+// ДАННЫЕ
+// ============================================================
 const LEVEL_LABELS = ['🔴 Новое','🟠 Сложное','🟡 Учу','🟢 Знаю','💙 Хорошо','⭐ Отлично'];
 const LEVEL_COLORS = ['#dc3545','#fd7e14','#ffc107','#28a745','#007bff','#6f42c1'];
-const COOLDOWN     = [0, 2, 5, 11, 24, 49];
-const W            = [100, 40, 15, 5, 2, 1];
-
-// Порог: слова с level >= REVIEW_THRESHOLD идут в Повторение
+const COOLDOWN = [0,2,5,11,24,49];
+const W = [100,40,15,5,2,1];
 const REVIEW_THRESHOLD = 3;
 
 let myWords = JSON.parse(localStorage.getItem('myWords')) || [];
+let myNotes = JSON.parse(localStorage.getItem('myNotes')) || [];
+let editingNoteId = null;
 
-// Состояние тренировки
 let quizMode = 'flash-en';
-let qScore = { correct:0, total:0 };
-let qRecent = [];
-let qCurrent = null;
-let qAnswerShown = false;
-
-// Состояние повторения
+let qScore = {correct:0,total:0}, qRecent=[], qCurrent=null, qAnswerShown=false;
 let reviewMode = 'flash-en';
-let rScore = { correct:0, total:0 };
-let rRecent = [];
-let rCurrent = null;
-let rAnswerShown = false;
+let rScore = {correct:0,total:0}, rRecent=[], rCurrent=null, rAnswerShown=false;
 
-function ensureLevels() {
-    myWords.forEach(w => { if (w.level === undefined) w.level = 0; });
-}
+function ensureLevels() { myWords.forEach(w=>{if(w.level===undefined)w.level=0;}); }
+function weakWords()   { return myWords.filter(w=>(w.level||0)<REVIEW_THRESHOLD); }
+function strongWords() { return myWords.filter(w=>(w.level||0)>=REVIEW_THRESHOLD); }
 
-function weakWords()   { return myWords.filter(w => (w.level||0) < REVIEW_THRESHOLD); }
-function strongWords() { return myWords.filter(w => (w.level||0) >= REVIEW_THRESHOLD); }
-
-// ====== АЛГОРИТМ ======
 function pickFrom(pool, recentArr) {
-    if (!pool.length) return null;
-    let available = pool.filter(w => {
-        let lastIdx = recentArr.lastIndexOf(w.en);
-        if (lastIdx === -1) return true;
-        return (recentArr.length - lastIdx) > COOLDOWN[Math.min(w.level,5)];
+    if(!pool.length) return null;
+    let available = pool.filter(w=>{
+        let li = recentArr.lastIndexOf(w.en);
+        return li===-1 || (recentArr.length-li)>COOLDOWN[Math.min(w.level,5)];
     });
-    if (!available.length) {
-        available = [...pool].sort((a,b) => recentArr.lastIndexOf(a.en) - recentArr.lastIndexOf(b.en));
-        available = [available[0]];
+    if(!available.length){
+        available=[...pool].sort((a,b)=>recentArr.lastIndexOf(a.en)-recentArr.lastIndexOf(b.en));
+        available=[available[0]];
     }
-    let total = available.reduce((s,w) => s + W[Math.min(w.level,5)], 0);
-    let rand = Math.random() * total;
-    let chosen = available[0];
-    for (let w of available) { rand -= W[Math.min(w.level,5)]; if (rand <= 0) { chosen = w; break; } }
+    let total=available.reduce((s,w)=>s+W[Math.min(w.level,5)],0);
+    let rand=Math.random()*total, chosen=available[0];
+    for(let w of available){rand-=W[Math.min(w.level,5)];if(rand<=0){chosen=w;break;}}
     recentArr.push(chosen.en);
-    if (recentArr.length > 60) recentArr.shift();
-    return { en: chosen.en, ru: chosen.ru, level: chosen.level };
+    if(recentArr.length>60)recentArr.shift();
+    return {en:chosen.en,ru:chosen.ru,level:chosen.level};
 }
-
-function updateLevel(en, knew) {
-    let w = myWords.find(x => x.en === en);
-    if (!w) return;
-    w.level = knew ? Math.min((w.level||0)+1, 5) : Math.max((w.level||0)-1, 0);
+function updateLevel(en,knew){
+    let w=myWords.find(x=>x.en===en);
+    if(!w)return;
+    w.level=knew?Math.min((w.level||0)+1,5):Math.max((w.level||0)-1,0);
     save();
 }
 
-// ====== ЭКСПОРТ / ИМПОРТ ======
-function exportWords() {
-    if (!myWords.length) { alert("Нет слов!"); return; }
-    let code = btoa(unescape(encodeURIComponent(JSON.stringify(myWords))));
-    let wrap = document.getElementById('export-area-wrap');
-    let area = document.getElementById('export-area');
-    wrap.classList.remove('hidden');
-    area.value = code; area.select();
-    try { document.execCommand('copy'); area.style.borderColor='#28a745'; setTimeout(()=>area.style.borderColor='#ddd',2000); } catch(e){}
+// ============================================================
+// ЭКСПОРТ / ИМПОРТ
+// ============================================================
+function exportWords(){
+    if(!myWords.length){alert("Нет слов!");return;}
+    let code=btoa(unescape(encodeURIComponent(JSON.stringify(myWords))));
+    let wrap=document.getElementById('export-area-wrap'),area=document.getElementById('export-area');
+    wrap.classList.remove('hidden');area.value=code;area.select();
+    try{document.execCommand('copy');area.style.borderColor='#28a745';setTimeout(()=>area.style.borderColor='#ddd',2000);}catch(e){}
 }
-function importWords() {
-    let raw = document.getElementById('import-area').value.trim();
-    let status = document.getElementById('import-status');
-    if (!raw) { status.innerHTML='<span style="color:#dc3545">⚠️ Вставь код</span>'; return; }
-    try {
-        let imported = JSON.parse(decodeURIComponent(escape(atob(raw))));
-        if (!Array.isArray(imported)) throw new Error();
-        let added = 0;
-        imported.forEach(w => {
-            if (w.en && w.ru && !myWords.find(x => x.en.toLowerCase()===w.en.toLowerCase())) {
-                myWords.push({ en:w.en, ru:w.ru, level:w.level||0 }); added++;
+function importWords(){
+    let raw=document.getElementById('import-area').value.trim();
+    let status=document.getElementById('import-status');
+    if(!raw){status.innerHTML='<span style="color:#dc3545">⚠️ Вставь код</span>';return;}
+    try{
+        let imported=JSON.parse(decodeURIComponent(escape(atob(raw))));
+        if(!Array.isArray(imported))throw new Error();
+        let added=0;
+        imported.forEach(w=>{
+            if(w.en&&w.ru&&!myWords.find(x=>x.en.toLowerCase()===w.en.toLowerCase())){
+                myWords.push({en:w.en,ru:w.ru,level:w.level||0});added++;
             }
         });
-        save(); render();
+        save();render();
         document.getElementById('import-area').value='';
         status.innerHTML=`<span style="color:#28a745">✓ Добавлено: ${added} слов</span>`;
-    } catch(e) { status.innerHTML='<span style="color:#dc3545">⚠️ Неверный код.</span>'; }
+    }catch(e){status.innerHTML='<span style="color:#dc3545">⚠️ Неверный код.</span>';}
 }
 
-// ====== СЛОВАРЬ ======
-function addWord() {
-    let en = document.getElementById('e').value.trim();
-    let ru = document.getElementById('r').value.trim();
-    if (!en || !ru) return;
-    if (myWords.find(w => w.en.toLowerCase()===en.toLowerCase())) { alert("Уже есть!"); return; }
-    myWords.push({ en, ru, level:0 });
-    save(); render();
-    document.getElementById('e').value='';
-    document.getElementById('r').value='';
+// ============================================================
+// СЛОВАРЬ
+// ============================================================
+function addWord(){
+    let en=document.getElementById('e').value.trim();
+    let ru=document.getElementById('r').value.trim();
+    if(!en||!ru)return;
+    if(myWords.find(w=>w.en.toLowerCase()===en.toLowerCase())){alert("Уже есть!");return;}
+    myWords.push({en,ru,level:0});save();render();
+    document.getElementById('e').value='';document.getElementById('r').value='';
 }
-function save() { localStorage.setItem('myWords', JSON.stringify(myWords)); }
-function render() {
+function save(){localStorage.setItem('myWords',JSON.stringify(myWords));}
+function render(){
     ensureLevels();
-    let q = (document.getElementById('search').value||'').toLowerCase();
-    let d = document.getElementById('list');
-    let filtered = myWords.filter(w => !q || w.en.toLowerCase().includes(q) || w.ru.toLowerCase().includes(q));
-    let counts = [0,0,0,0,0,0];
-    myWords.forEach(w => counts[Math.min(w.level||0,5)]++);
-    d.innerHTML = `<div class="stats">
-        Слов: ${myWords.length} &nbsp;·&nbsp;
-        💪 Учу: ${counts[0]+counts[1]+counts[2]} &nbsp;·&nbsp;
-        🔄 Знаю: ${counts[3]+counts[4]+counts[5]}
-    </div>`;
-    filtered.forEach((w,i) => {
-        let lvl = Math.min(w.level||0,5);
-        d.innerHTML += `<div class="word-item">
-            <span><span class="level-dot" style="background:${LEVEL_COLORS[lvl]};"></span><b>${w.en}</b> — ${w.ru}</span>
-            <button onclick="delWord(${i})" style="color:red;background:none;border:none;font-size:18px;padding:4px 8px;cursor:pointer;">✕</button>
-        </div>`;
+    let q=(document.getElementById('search').value||'').toLowerCase();
+    let d=document.getElementById('list');
+    let filtered=myWords.filter(w=>!q||w.en.toLowerCase().includes(q)||w.ru.toLowerCase().includes(q));
+    let counts=[0,0,0,0,0,0];
+    myWords.forEach(w=>counts[Math.min(w.level||0,5)]++);
+    d.innerHTML=`<div class="stats">Слов: ${myWords.length} &nbsp;·&nbsp; 💪 Учу: ${counts[0]+counts[1]+counts[2]} &nbsp;·&nbsp; 🔄 Знаю: ${counts[3]+counts[4]+counts[5]}</div>`;
+    filtered.forEach((w,i)=>{
+        let lvl=Math.min(w.level||0,5);
+        d.innerHTML+=`<div class="word-item"><span><span class="level-dot" style="background:${LEVEL_COLORS[lvl]};"></span><b>${w.en}</b> — ${w.ru}</span><button onclick="delWord(${i})" style="color:red;background:none;border:none;font-size:18px;padding:4px 8px;cursor:pointer;">✕</button></div>`;
     });
 }
-function delWord(i) { myWords.splice(i,1); save(); render(); }
-function clearAll() { if(confirm("Удалить все?")) { myWords=[]; save(); render(); } }
+function delWord(i){myWords.splice(i,1);save();render();}
+function clearAll(){if(confirm("Удалить все?")){{myWords=[];save();render();}}}
 
-// ====== ГЛАВНЫЕ ВКЛАДКИ ======
-function tab(t) {
-    ['add','quiz','review'].forEach(x => document.getElementById(x).className = x===t ? '' : 'hidden');
-    document.getElementById('nb1').className = t==='add'    ? 'active' : '';
-    document.getElementById('nb2').className = t==='quiz'   ? 'active' : '';
-    document.getElementById('nb3').className = t==='review' ? 'active' : '';
-    if (t==='quiz')   startQuiz();
-    if (t==='review') startReview();
+// ============================================================
+// ВКЛАДКИ
+// ============================================================
+function tab(t){
+    ['add','quiz','review','notes'].forEach(x=>document.getElementById(x).className=x===t?'':'hidden');
+    document.getElementById('nb1').className=t==='add'?'active':'';
+    document.getElementById('nb2').className=t==='quiz'?'active':'';
+    document.getElementById('nb3').className=t==='review'?'active':'';
+    document.getElementById('nb4').className=t==='notes'?'active':'';
+    if(t==='quiz')startQuiz();
+    if(t==='review')startReview();
+    if(t==='notes')renderNotes();
 }
 
-// ====== ТРЕНИРОВКА ======
-function setQuizMode(m) {
-    quizMode = m;
-    ['flash-en','type-en','flash-ru','type-ru'].forEach((x,i) => {
-        document.getElementById('qt'+(i+1)).className = x===m ? 'active' : '';
-    });
+// ============================================================
+// ТРЕНИРОВКА
+// ============================================================
+function setQuizMode(m){
+    quizMode=m;
+    ['flash-en','type-en','flash-ru','type-ru'].forEach((x,i)=>document.getElementById('qt'+(i+1)).className=x===m?'active':'');
     startQuiz();
 }
-
-function startQuiz() {
-    ensureLevels();
-    qScore = { correct:0, total:0 };
-    qRecent = [];
-    let pool = weakWords();
+function startQuiz(){
+    ensureLevels();qScore={correct:0,total:0};qRecent=[];
+    let pool=weakWords();
     document.getElementById('quiz-results').classList.add('hidden');
-    if (!pool.length) {
-        document.getElementById('quiz-card').classList.add('hidden');
-        document.getElementById('quiz-empty').classList.remove('hidden');
-        return;
-    }
-    document.getElementById('quiz-empty').classList.add('hidden');
-    document.getElementById('quiz-card').classList.remove('hidden');
-    nextQ();
+    if(!pool.length){document.getElementById('quiz-card').classList.add('hidden');document.getElementById('quiz-empty').classList.remove('hidden');return;}
+    document.getElementById('quiz-empty').classList.add('hidden');document.getElementById('quiz-card').classList.remove('hidden');nextQ();
 }
-
-function nextQ() {
-    let pool = weakWords();
-    if (!pool.length) {
-        document.getElementById('quiz-card').classList.add('hidden');
-        document.getElementById('quiz-empty').classList.remove('hidden');
-        return;
-    }
-    if (qScore.total > 0 && qScore.total % 20 === 0) { showQuizSummary(); return; }
-
-    qCurrent = pickFrom(pool, qRecent);
-    if (!qCurrent) return;
-    qAnswerShown = false;
-
-    let lvl = Math.min(qCurrent.level||0, 5);
-    document.getElementById('q-level').innerText = LEVEL_LABELS[lvl];
-    document.getElementById('q-level').style.color = LEVEL_COLORS[lvl];
-
-    let isRU = quizMode==='flash-ru' || quizMode==='type-ru';
-    document.getElementById('q-label').innerText = isRU ? '🇷🇺 Переведи на английский:' : '🇬🇧 Переведи на русский:';
-    document.getElementById('q-word').innerText   = isRU ? qCurrent.ru : qCurrent.en;
-
-    let isFlash = quizMode==='flash-en' || quizMode==='flash-ru';
-    document.getElementById('qmode-flash').classList.toggle('hidden', !isFlash);
-    document.getElementById('qmode-type').classList.toggle('hidden', isFlash);
-
-    if (isFlash) {
-        document.getElementById('q-answer').innerText = isRU ? qCurrent.en : qCurrent.ru;
-        document.getElementById('q-answer').classList.add('hidden');
-    } else {
-        document.getElementById('q-type-input').value='';
-        document.getElementById('q-type-result').innerText='';
-        document.getElementById('q-next-type').classList.add('hidden');
-        document.getElementById('q-type-input').placeholder = isRU ? 'Введи по-английски...' : 'Введи перевод...';
-        setTimeout(()=>document.getElementById('q-type-input').focus(),100);
-    }
+function nextQ(){
+    let pool=weakWords();
+    if(!pool.length){document.getElementById('quiz-card').classList.add('hidden');document.getElementById('quiz-empty').classList.remove('hidden');return;}
+    if(qScore.total>0&&qScore.total%20===0){showQuizSummary();return;}
+    qCurrent=pickFrom(pool,qRecent);if(!qCurrent)return;qAnswerShown=false;
+    let lvl=Math.min(qCurrent.level||0,5);
+    document.getElementById('q-level').innerText=LEVEL_LABELS[lvl];
+    document.getElementById('q-level').style.color=LEVEL_COLORS[lvl];
+    let isRU=quizMode==='flash-ru'||quizMode==='type-ru';
+    document.getElementById('q-label').innerText=isRU?'🇷🇺 Переведи на английский:':'🇬🇧 Переведи на русский:';
+    document.getElementById('q-word').innerText=isRU?qCurrent.ru:qCurrent.en;
+    let isFlash=quizMode==='flash-en'||quizMode==='flash-ru';
+    document.getElementById('qmode-flash').classList.toggle('hidden',!isFlash);
+    document.getElementById('qmode-type').classList.toggle('hidden',isFlash);
+    if(isFlash){document.getElementById('q-answer').innerText=isRU?qCurrent.en:qCurrent.ru;document.getElementById('q-answer').classList.add('hidden');}
+    else{document.getElementById('q-type-input').value='';document.getElementById('q-type-result').innerText='';document.getElementById('q-next-type').classList.add('hidden');document.getElementById('q-type-input').placeholder=isRU?'Введи по-английски...':'Введи перевод...';setTimeout(()=>document.getElementById('q-type-input').focus(),100);}
     updateQCount();
 }
-
-function updateQCount() {
-    let pct = qScore.total>0 ? Math.round(qScore.correct/qScore.total*100) : 0;
-    document.getElementById('q-count').innerText = `💪 Слабых слов: ${weakWords().length} · Верно: ${qScore.correct}/${qScore.total} (${pct}%)`;
-    document.getElementById('score-fill').style.width = pct+'%';
+function updateQCount(){
+    let pct=qScore.total>0?Math.round(qScore.correct/qScore.total*100):0;
+    document.getElementById('q-count').innerText=`💪 Слабых: ${weakWords().length} · Верно: ${qScore.correct}/${qScore.total} (${pct}%)`;
+    document.getElementById('score-fill').style.width=pct+'%';
 }
-
-function showAns(section) {
-    if (section==='q') { document.getElementById('q-answer').classList.remove('hidden'); qAnswerShown=true; }
-    else               { document.getElementById('r-answer').classList.remove('hidden'); rAnswerShown=true; }
+function showAns(s){
+    if(s==='q'){document.getElementById('q-answer').classList.remove('hidden');qAnswerShown=true;}
+    else{document.getElementById('r-answer').classList.remove('hidden');rAnswerShown=true;}
 }
-
-function markQ(knew) {
-    if (!qAnswerShown) { showAns('q'); return; }
-    qScore.total++;
-    if (knew) qScore.correct++;
-    updateLevel(qCurrent.en, knew);
-    updateQCount();
-    nextQ();
+function markQ(knew){
+    if(!qAnswerShown){showAns('q');return;}
+    qScore.total++;if(knew)qScore.correct++;updateLevel(qCurrent.en,knew);updateQCount();nextQ();
 }
-
-function checkQType() {
-    let inp = document.getElementById('q-type-input').value.trim().toLowerCase();
-    if (!inp) return;
-    let isRU = quizMode==='type-ru';
-    let correct = isRU ? qCurrent.en.toLowerCase() : qCurrent.ru.toLowerCase();
-    let ok = correct.split('/').map(v=>v.trim()).some(v=>v===inp);
-    qScore.total++;
-    if (ok) { qScore.correct++; document.getElementById('q-type-result').innerHTML=`<span style="color:#28a745">✓ Верно!</span>`; }
-    else { document.getElementById('q-type-result').innerHTML=`<span style="color:#dc3545">✗ Правильно: <b>${isRU?qCurrent.en:qCurrent.ru}</b></span>`; }
-    updateLevel(qCurrent.en, ok);
-    updateQCount();
-    document.getElementById('q-next-type').classList.remove('hidden');
+function checkQType(){
+    let inp=document.getElementById('q-type-input').value.trim().toLowerCase();if(!inp)return;
+    let isRU=quizMode==='type-ru';
+    let correct=isRU?qCurrent.en.toLowerCase():qCurrent.ru.toLowerCase();
+    let ok=correct.split('/').map(v=>v.trim()).some(v=>v===inp);
+    qScore.total++;if(ok){qScore.correct++;document.getElementById('q-type-result').innerHTML='<span style="color:#28a745">✓ Верно!</span>';}
+    else{document.getElementById('q-type-result').innerHTML=`<span style="color:#dc3545">✗ Правильно: <b>${isRU?qCurrent.en:qCurrent.ru}</b></span>`;}
+    updateLevel(qCurrent.en,ok);updateQCount();document.getElementById('q-next-type').classList.remove('hidden');
 }
-document.getElementById('q-type-input').addEventListener('keydown', e=>{
-    if (e.key==='Enter') {
-        if (!document.getElementById('q-next-type').classList.contains('hidden')) nextQ();
-        else checkQType();
-    }
+document.getElementById('q-type-input').addEventListener('keydown',e=>{
+    if(e.key==='Enter'){if(!document.getElementById('q-next-type').classList.contains('hidden'))nextQ();else checkQType();}
 });
-
-function showQuizSummary() {
-    document.getElementById('quiz-card').classList.add('hidden');
-    document.getElementById('quiz-results').classList.remove('hidden');
-    let pct = Math.round(qScore.correct/qScore.total*100);
-    let emoji = pct>=80?'🎉':pct>=50?'💪':'😅';
-    let weak = weakWords().length, strong = strongWords().length;
-    document.getElementById('quiz-results-body').innerHTML = `
-        <div style="font-size:48px;margin:8px 0;">${emoji}</div>
-        <h2 style="margin:6px 0;">${qScore.correct}/${qScore.total} верно · ${pct}%</h2>
-        <div style="background:#f8f9fa;border-radius:10px;padding:14px;margin:12px 0;text-align:left;font-size:14px;line-height:2;">
-            💪 Ещё учу: <b>${weak}</b><br>
-            🔄 Готовы к повторению: <b>${strong}</b>
-        </div>
-        <button class="res-btn" style="background:#007bff;color:white;" onclick="continueQuiz()">▶ Продолжить</button>
-    `;
+function showQuizSummary(){
+    document.getElementById('quiz-card').classList.add('hidden');document.getElementById('quiz-results').classList.remove('hidden');
+    let pct=Math.round(qScore.correct/qScore.total*100);let emoji=pct>=80?'🎉':pct>=50?'💪':'😅';
+    document.getElementById('quiz-results-body').innerHTML=`<div style="font-size:48px;margin:8px 0;">${emoji}</div><h2 style="margin:6px 0;">${qScore.correct}/${qScore.total} верно · ${pct}%</h2><div style="background:#f8f9fa;border-radius:10px;padding:14px;margin:12px 0;text-align:left;font-size:14px;line-height:2;">💪 Ещё учу: <b>${weakWords().length}</b><br>🔄 Готовы к повторению: <b>${strongWords().length}</b></div><button class="res-btn" style="background:#007bff;color:white;" onclick="continueQuiz()">▶ Продолжить</button>`;
 }
-function continueQuiz() {
-    qScore = { correct:0, total:0 };
-    document.getElementById('quiz-results').classList.add('hidden');
-    document.getElementById('quiz-card').classList.remove('hidden');
-    nextQ();
-}
+function continueQuiz(){qScore={correct:0,total:0};document.getElementById('quiz-results').classList.add('hidden');document.getElementById('quiz-card').classList.remove('hidden');nextQ();}
 
-// ====== ПОВТОРЕНИЕ ======
-function setReviewMode(m) {
-    reviewMode = m;
-    document.getElementById('rt1').className = m==='flash-en' ? 'active' : '';
-    document.getElementById('rt2').className = m==='flash-ru' ? 'active' : '';
+// ============================================================
+// ПОВТОРЕНИЕ
+// ============================================================
+function setReviewMode(m){
+    reviewMode=m;
+    document.getElementById('rt1').className=m==='flash-en'?'active':'';
+    document.getElementById('rt2').className=m==='flash-ru'?'active':'';
     startReview();
 }
-
-function startReview() {
-    ensureLevels();
-    rScore = { correct:0, total:0 };
-    rRecent = [];
-    let pool = strongWords();
+function startReview(){
+    ensureLevels();rScore={correct:0,total:0};rRecent=[];
+    let pool=strongWords();
     document.getElementById('review-results').classList.add('hidden');
-    if (!pool.length) {
-        document.getElementById('review-card').classList.add('hidden');
-        document.getElementById('review-empty').classList.remove('hidden');
-        return;
+    if(!pool.length){document.getElementById('review-card').classList.add('hidden');document.getElementById('review-empty').classList.remove('hidden');return;}
+    document.getElementById('review-empty').classList.add('hidden');document.getElementById('review-card').classList.remove('hidden');nextR();
+}
+function nextR(){
+    let pool=strongWords();
+    if(!pool.length){document.getElementById('review-card').classList.add('hidden');document.getElementById('review-empty').classList.remove('hidden');return;}
+    if(rScore.total>0&&rScore.total%20===0){showReviewSummary();return;}
+    rCurrent=pickFrom(pool,rRecent);if(!rCurrent)return;rAnswerShown=false;
+    let lvl=Math.min(rCurrent.level||0,5);
+    document.getElementById('r-level').innerText=LEVEL_LABELS[lvl];document.getElementById('r-level').style.color=LEVEL_COLORS[lvl];
+    let isRU=reviewMode==='flash-ru';
+    document.getElementById('r-label').innerText=isRU?'🇷🇺 Переведи на английский:':'🇬🇧 Переведи на русский:';
+    document.getElementById('r-word').innerText=isRU?rCurrent.ru:rCurrent.en;
+    document.getElementById('r-answer').innerText=isRU?rCurrent.en:rCurrent.ru;
+    document.getElementById('r-answer').classList.add('hidden');updateRCount();
+}
+function updateRCount(){
+    let pct=rScore.total>0?Math.round(rScore.correct/rScore.total*100):0;
+    document.getElementById('r-count').innerText=`🔄 Знаю хорошо: ${strongWords().length} · Верно: ${rScore.correct}/${rScore.total} (${pct}%)`;
+    document.getElementById('score-fill2').style.width=pct+'%';
+}
+function markR(knew){
+    if(!rAnswerShown){showAns('r');return;}
+    rScore.total++;if(knew)rScore.correct++;updateLevel(rCurrent.en,knew);updateRCount();nextR();
+}
+function showReviewSummary(){
+    document.getElementById('review-card').classList.add('hidden');document.getElementById('review-results').classList.remove('hidden');
+    let pct=Math.round(rScore.correct/rScore.total*100);let emoji=pct>=80?'🎉':pct>=50?'💪':'😅';
+    document.getElementById('review-results-body').innerHTML=`<div style="font-size:48px;margin:8px 0;">${emoji}</div><h2 style="margin:6px 0;">${rScore.correct}/${rScore.total} верно · ${pct}%</h2><div style="background:#f8f9fa;border-radius:10px;padding:14px;margin:12px 0;text-align:left;font-size:14px;line-height:2;">🔄 На повторении: <b>${strongWords().length}</b><br>💪 В тренировке: <b>${weakWords().length}</b></div><button class="res-btn" style="background:#007bff;color:white;" onclick="continueReview()">▶ Продолжить</button>`;
+}
+function continueReview(){rScore={correct:0,total:0};document.getElementById('review-results').classList.add('hidden');document.getElementById('review-card').classList.remove('hidden');nextR();}
+
+// ============================================================
+// ЗАМЕТКИ
+// ============================================================
+const TAG_LABELS = {grammar:'📘 Грамматика',tenses:'⏰ Времена',vocab:'📗 Лексика',phrases:'💬 Фразы',tips:'💡 Советы',other:'📁 Другое'};
+
+function saveNotes(){ localStorage.setItem('myNotes', JSON.stringify(myNotes)); }
+
+function openNoteEditor(id=null){
+    editingNoteId = id;
+    let n = id ? myNotes.find(x=>x.id===id) : null;
+    document.getElementById('note-title').value = n ? n.title : '';
+    document.getElementById('note-tag').value = n ? n.tag : 'grammar';
+    document.getElementById('note-textarea').value = n ? n.text : '';
+    document.getElementById('note-editor-wrap').classList.remove('hidden');
+    document.getElementById('notes-list-wrap').classList.add('hidden');
+    document.getElementById('note-title').focus();
+}
+
+function cancelNote(){
+    document.getElementById('note-editor-wrap').classList.add('hidden');
+    document.getElementById('notes-list-wrap').classList.remove('hidden');
+}
+
+function saveNote(){
+    let title = document.getElementById('note-title').value.trim();
+    let text  = document.getElementById('note-textarea').value.trim();
+    let tag   = document.getElementById('note-tag').value;
+    if(!title || !text){ alert("Заполни название и текст!"); return; }
+    if(editingNoteId){
+        let n = myNotes.find(x=>x.id===editingNoteId);
+        if(n){ n.title=title; n.text=text; n.tag=tag; }
+    } else {
+        myNotes.unshift({ id: Date.now(), title, text, tag, open: false });
     }
-    document.getElementById('review-empty').classList.add('hidden');
-    document.getElementById('review-card').classList.remove('hidden');
-    nextR();
+    saveNotes(); cancelNote(); renderNotes();
 }
 
-function nextR() {
-    let pool = strongWords();
-    if (!pool.length) {
-        document.getElementById('review-card').classList.add('hidden');
-        document.getElementById('review-empty').classList.remove('hidden');
-        return;
+function deleteNote(id){
+    if(!confirm("Удалить правило?")) return;
+    myNotes = myNotes.filter(x=>x.id!==id);
+    saveNotes(); renderNotes();
+}
+
+function toggleNote(id){
+    let n = myNotes.find(x=>x.id===id);
+    if(n) n.open = !n.open;
+    saveNotes(); renderNotes();
+}
+
+// Парсинг текста → HTML
+function parseNote(text){
+    let html = text
+        // Экранируем HTML
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        // Блоки [example]...[/example]
+        .replace(/\[example\]([\s\S]*?)\[\/example\]/g, (_, c) => `<div class="example">✅ ${c.trim()}</div>`)
+        // Блоки [warn]...[/warn]
+        .replace(/\[warn\]([\s\S]*?)\[\/warn\]/g, (_, c) => `<div class="warning">⚠️ ${c.trim()}</div>`)
+        // Заголовки ### 
+        .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+        // Цитаты >
+        .replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>')
+        // Жирный **...**
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        // Курсив _..._
+        .replace(/_(.+?)_/g, '<em>$1</em>')
+        // Код `...`
+        .replace(/`(.+?)`/g, '<code>$1</code>')
+        // Переносы строк
+        .replace(/\n/g, '<br>');
+    return html;
+}
+
+function renderNotes(){
+    let q = (document.getElementById('notes-search').value||'').toLowerCase();
+    let filtered = myNotes.filter(n => !q || n.title.toLowerCase().includes(q) || n.text.toLowerCase().includes(q));
+    let container = document.getElementById('notes-list');
+    let empty = document.getElementById('notes-empty');
+
+    if(!filtered.length){ container.innerHTML=''; empty.classList.remove('hidden'); return; }
+    empty.classList.add('hidden');
+
+    container.innerHTML = filtered.map(n => {
+        let tagClass = 'tag-'+n.tag;
+        let tagLabel = TAG_LABELS[n.tag]||'📁';
+        let isOpen = n.open;
+        return `
+        <div class="note-card">
+            <div class="note-header" onclick="toggleNote(${n.id})">
+                <span class="note-title-text">${escHtml(n.title)}</span>
+                <span class="note-tag ${tagClass}">${tagLabel}</span>
+                <div class="note-actions" onclick="event.stopPropagation()">
+                    <button class="note-act-btn" onclick="openNoteEditor(${n.id})" title="Редактировать">✏️</button>
+                    <button class="note-act-btn" onclick="deleteNote(${n.id})" title="Удалить">🗑️</button>
+                </div>
+                <span class="note-toggle ${isOpen?'open':''}">▾</span>
+            </div>
+            ${isOpen ? `<div class="note-body">${parseNote(n.text)}</div>` : ''}
+        </div>`;
+    }).join('');
+}
+
+function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ============================================================
+// ИНСТРУМЕНТЫ РЕДАКТОРА
+// ============================================================
+function ins(before, after){
+    let ta = document.getElementById('note-textarea');
+    let s = ta.selectionStart, e = ta.selectionEnd;
+    let sel = ta.value.substring(s,e)||'текст';
+    ta.value = ta.value.substring(0,s) + before + sel + after + ta.value.substring(e);
+    ta.selectionStart = s + before.length;
+    ta.selectionEnd = s + before.length + sel.length;
+    ta.focus();
+}
+function insLine(prefix){
+    let ta = document.getElementById('note-textarea');
+    let s = ta.selectionStart;
+    let before = ta.value.substring(0,s);
+    let after  = ta.value.substring(s);
+    let insert = (before.length && !before.endsWith('\n') ? '\n' : '') + prefix;
+    ta.value = before + insert + after;
+    ta.selectionStart = ta.selectionEnd = s + insert.length;
+    ta.focus();
+}
+function insBlock(open, close){
+    let ta = document.getElementById('note-textarea');
+    let s = ta.selectionStart, e = ta.selectionEnd;
+    let sel = ta.value.substring(s,e)||'Текст примера';
+    let insert = '\n' + open + sel + close + '\n';
+    ta.value = ta.value.substring(0,s) + insert + ta.value.substring(e);
+    ta.focus();
+}
+function insTable(){
+    let ta = document.getElementById('note-textarea');
+    let s = ta.selectionStart;
+    let tpl = '\n| Заголовок 1 | Заголовок 2 |\n| --- | --- |\n| Ячейка 1 | Ячейка 2 |\n';
+    ta.value = ta.value.substring(0,s) + tpl + ta.value.substring(s);
+    ta.focus();
+}
+
+// Простой парсинг таблиц markdown (добавим в parseNote)
+function parseNote(text){
+    // Сначала обрабатываем таблицы
+    let lines = text.split('\n');
+    let result = [], i = 0;
+    while(i < lines.length){
+        if(i+1 < lines.length && /^\|.*\|$/.test(lines[i].trim()) && /^\|[\s\-\|]+\|$/.test(lines[i+1].trim())){
+            // Таблица
+            let headers = lines[i].trim().split('|').filter(c=>c.trim()).map(c=>c.trim());
+            let rows = [];
+            i += 2;
+            while(i < lines.length && /^\|.*\|$/.test(lines[i].trim())){
+                rows.push(lines[i].trim().split('|').filter(c=>c.trim()).map(c=>c.trim()));
+                i++;
+            }
+            let th = headers.map(h=>`<th>${escHtml(h)}</th>`).join('');
+            let tr = rows.map(r=>`<tr>${r.map(c=>`<td>${escHtml(c)}</td>`).join('')}</tr>`).join('');
+            result.push(`<table><tr>${th}</tr>${tr}</table>`);
+        } else {
+            result.push(lines[i]);
+            i++;
+        }
     }
-    if (rScore.total > 0 && rScore.total % 20 === 0) { showReviewSummary(); return; }
+    text = result.join('\n');
 
-    rCurrent = pickFrom(pool, rRecent);
-    if (!rCurrent) return;
-    rAnswerShown = false;
-
-    let lvl = Math.min(rCurrent.level||0, 5);
-    document.getElementById('r-level').innerText = LEVEL_LABELS[lvl];
-    document.getElementById('r-level').style.color = LEVEL_COLORS[lvl];
-
-    let isRU = reviewMode==='flash-ru';
-    document.getElementById('r-label').innerText = isRU ? '🇷🇺 Переведи на английский:' : '🇬🇧 Переведи на русский:';
-    document.getElementById('r-word').innerText   = isRU ? rCurrent.ru : rCurrent.en;
-    document.getElementById('r-answer').innerText = isRU ? rCurrent.en : rCurrent.ru;
-    document.getElementById('r-answer').classList.add('hidden');
-    updateRCount();
-}
-
-function updateRCount() {
-    let pct = rScore.total>0 ? Math.round(rScore.correct/rScore.total*100) : 0;
-    document.getElementById('r-count').innerText = `🔄 Знаю хорошо: ${strongWords().length} · Верно: ${rScore.correct}/${rScore.total} (${pct}%)`;
-    document.getElementById('score-fill2').style.width = pct+'%';
-}
-
-function markR(knew) {
-    if (!rAnswerShown) { showAns('r'); return; }
-    rScore.total++;
-    if (knew) rScore.correct++;
-    updateLevel(rCurrent.en, knew);
-    // Если слово упало ниже порога — оно уйдёт обратно в тренировку автоматически
-    updateRCount();
-    nextR();
-}
-
-function showReviewSummary() {
-    document.getElementById('review-card').classList.add('hidden');
-    document.getElementById('review-results').classList.remove('hidden');
-    let pct = Math.round(rScore.correct/rScore.total*100);
-    let emoji = pct>=80?'🎉':pct>=50?'💪':'😅';
-    document.getElementById('review-results-body').innerHTML = `
-        <div style="font-size:48px;margin:8px 0;">${emoji}</div>
-        <h2 style="margin:6px 0;">${rScore.correct}/${rScore.total} верно · ${pct}%</h2>
-        <div style="background:#f8f9fa;border-radius:10px;padding:14px;margin:12px 0;text-align:left;font-size:14px;line-height:2;">
-            🔄 Слов на повторении: <b>${strongWords().length}</b><br>
-            💪 Слов в тренировке: <b>${weakWords().length}</b>
-        </div>
-        <button class="res-btn" style="background:#007bff;color:white;" onclick="continueReview()">▶ Продолжить</button>
-    `;
-}
-function continueReview() {
-    rScore = { correct:0, total:0 };
-    document.getElementById('review-results').classList.add('hidden');
-    document.getElementById('review-card').classList.remove('hidden');
-    nextR();
+    let html = text
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+        .replace(/\[example\]([\s\S]*?)\[\/example\]/g,(_,c)=>`<div class="example">✅ ${c.trim()}</div>`)
+        .replace(/\[warn\]([\s\S]*?)\[\/warn\]/g,(_,c)=>`<div class="warning">⚠️ ${c.trim()}</div>`)
+        .replace(/^### (.+)$/gm,'<h3>$1</h3>')
+        .replace(/^&gt; (.+)$/gm,'<blockquote>$1</blockquote>')
+        .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+        .replace(/_(.+?)_/g,'<em>$1</em>')
+        .replace(/`(.+?)`/g,'<code>$1</code>')
+        // Восстанавливаем таблицы (они уже HTML, не экранируем)
+        .replace(/&lt;table&gt;([\s\S]*?)&lt;\/table&gt;/g, (_, inner) => {
+            return '<table>' + inner.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&') + '</table>';
+        })
+        .replace(/\n/g,'<br>');
+    return html;
 }
 
 render();
