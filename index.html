@@ -246,10 +246,10 @@ const db  = getDatabase(app);
 
 // ============ СИНХРОНИЗАЦИЯ ============
 let saveTimeout = null;
-let currentLang = localStorage.getItem('lang') || 'en';
 
+// Всегда читаем из window.currentLang — он обновляется основным скриптом
 function dbPath(key) {
-    return `data_${currentLang}/${key}`;
+    return `data_${window.currentLang || 'en'}/${key}`;
 }
 
 // Загрузка данных из Firebase при старте
@@ -280,8 +280,8 @@ async function loadFromFirebase() {
     } catch(e) {
         setSyncStatus('err', '❌ Нет соединения — данные локальные');
         // Откат на localStorage
-        const w = localStorage.getItem('myWords_' + currentLang) || localStorage.getItem('myWords');
-        const n = localStorage.getItem('myNotes');
+        const w = localStorage.getItem('myWords_' + (window.currentLang||'en')) || localStorage.getItem('myWords');
+        const n = localStorage.getItem('myNotes_' + (window.currentLang||'en')) || localStorage.getItem('myNotes');
         if (w) myWords = JSON.parse(w);
         if (n) myNotes = JSON.parse(n);
         render(); renderNotes();
@@ -293,8 +293,8 @@ async function saveToFirebase(key, data) {
         await set(ref(db, dbPath(key)), data);
         setSyncStatus('ok', '✅ Сохранено');
         // Тоже в localStorage как резерв
-        localStorage.setItem('myWords_' + currentLang, JSON.stringify(myWords));
-        localStorage.setItem('myNotes', JSON.stringify(myNotes));
+        localStorage.setItem('myWords_' + (window.currentLang||'en'), JSON.stringify(myWords));
+        localStorage.setItem('myNotes_' + (window.currentLang||'en'), JSON.stringify(myNotes));
     } catch(e) {
         setSyncStatus('err', '❌ Ошибка сохранения');
     }
@@ -383,15 +383,17 @@ const LANGS = {
 };
 
 let currentLang = localStorage.getItem('lang') || 'en';
+window.currentLang = currentLang; // доступно Firebase модулю
 
 function setLang(lang) {
     currentLang = lang;
+    window.currentLang = lang; // обновляем сразу — Firebase модуль прочитает правильный путь
     localStorage.setItem('lang', lang);
     document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
     document.querySelector(`.lang-btn[onclick="setLang('${lang}')"]`).classList.add('active');
     document.body.className = lang === 'jp' ? 'jp' : '';
     applyTranslations();
-    // Перезагружаем данные для выбранного языка
+    // Очищаем и перезагружаем данные для выбранного языка
     myWords = []; myNotes = [];
     render(); renderNotes();
     if (window._fbLoad) window._fbLoad();
